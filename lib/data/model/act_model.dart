@@ -17,7 +17,6 @@ class ActModel {
     required this.status,
   });
 
-  // Factory method to create an Act object from JSON
   factory ActModel.fromJson(Map<String, dynamic> json) {
     return ActModel(
       id: json['id'],
@@ -30,7 +29,6 @@ class ActModel {
     );
   }
 
-  // Method to convert an Act object to JSON
   Map<String, dynamic> toJson() {
     return {
       'actNumber': actNumber,

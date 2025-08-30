@@ -8,14 +8,14 @@ import io.flutter.plugin.common.MethodChannel
 
 
 class MainActivity: FlutterActivity(){
-    private val CHANNEL: String = "com.example.android_id/android"
+    private val CHANNEL: String = "com.example.app/device"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         MethodChannel(flutterEngine!!.dartExecutor.binaryMessenger, CHANNEL)
             .setMethodCallHandler { call: MethodCall, result: MethodChannel.Result ->
-                if (call.method == "getAndroidId") {
+                if (call.method == "getDeviceId") {
                     val androidId: String = Settings.Secure.getString(contentResolver, Settings.Secure.ANDROID_ID)
                     if (androidId != null) {
                         result.success(androidId)

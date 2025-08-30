@@ -1,46 +1,27 @@
 import 'dart:developer';
-import 'package:WIM/domain/repo/LoginRepository.dart';
-import 'package:WIM/ui/util/RoundButton.dart';
+import 'package:WIM/ui/util/roundButton.dart';
 import 'package:WIM/ui/util/global.dart';
-import 'package:WIM/ui/viewModel/LoginViewModel.dart';
-import 'package:dio/dio.dart';
+import 'package:WIM/ui/viewModel/loginViewModel.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../data/DbOpenHelper.dart';
-import '../data/model/user_model.dart';
-import '../data/network/Api.dart';
+import '../../data/database/dbOpenHelper.dart';
+import '../../data/model/user_model.dart';
 import 'home.dart';
 
-void main() {
-  final dio = Dio();
-  final apiService = Api(dio);
-  final loginRepository = LoginRepository(apiService);
-
-  runApp(
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => LoginViewModel(loginRepository)),
-      ],
-      child: Login(),
-    ),
-  );
-}
-
 class Login extends StatelessWidget {
-  const Login({super.key});
 
-  static const platform = MethodChannel('com.example.android_id/android');
+  const Login({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: const LoginPage(),
+      home: LoginPage(),
     );
   }
+
 }
 
 class LoginPage extends StatefulWidget {
@@ -48,12 +29,15 @@ class LoginPage extends StatefulWidget {
 
   @override
   State<LoginPage> createState() => _LoginPageState();
+
 }
 
 class _LoginPageState extends State<LoginPage> {
-  String androidId = "";
   String version = "";
   String firmaN = "";
+  String deviceId = "";
+
+  static const platform = MethodChannel('com.example.app/device');
 
   final loginController = TextEditingController();
   final passwordController = TextEditingController();
@@ -61,7 +45,7 @@ class _LoginPageState extends State<LoginPage> {
   @override
   void initState() {
     super.initState();
-    getAndroidId();
+    getDeviceId();
     getVersion();
     getLogin();
     firmaName();
@@ -77,6 +61,7 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     final loginViewModel = Provider.of<LoginViewModel>(context, listen: true);
+
     return Scaffold(
         appBar: buildAppBar(),
         body: Container(
@@ -92,7 +77,7 @@ class _LoginPageState extends State<LoginPage> {
 
   Widget buildContainer(LoginViewModel loginViewModel, BuildContext context) {
     return Padding(
-      padding: EdgeInsets.all(15),
+      padding: EdgeInsets.all(20),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -141,21 +126,6 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  Widget buildLogin(LoginViewModel viewModel, BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      height: 50,
-      child: ElevatedButton(
-        onPressed: () async {
-          fetchLogin(context, viewModel);
-        },
-        style: ElevatedButton.styleFrom(backgroundColor: Colors.blueAccent),
-        child:
-            Text('Войти', style: TextStyle(fontSize: 17, color: Colors.white)),
-      ),
-    );
-  }
-
   Widget buildLoginBtn(LoginViewModel viewModel, BuildContext context) {
     return SizedBox(
       width: double.infinity,
@@ -173,7 +143,7 @@ class _LoginPageState extends State<LoginPage> {
     return Column(
       children: [
         Text(
-          "ID: $androidId",
+          "ID: $deviceId",
           style: TextStyle(fontSize: 15),
         ),
         Text(
@@ -184,33 +154,32 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  Future<void> fetchLogin(
-      BuildContext context, LoginViewModel viewModel) async {
-    final username = loginController.text.toString().replaceAll(' ', '');
+  Future<void> fetchLogin(BuildContext context, LoginViewModel viewModel) async {
+    final login = loginController.text.toString().replaceAll(' ', '');
     final password = passwordController.text.toString();
 
-    saveLogin(username);
+    saveLogin(login);
 
     final user = User(
-      username: username,
+      login: login,
       password: password,
-      pdaId: androidId,
+      pdaId: deviceId,
     );
 
-    final login = await viewModel.login(user);
+    final result = await viewModel.login(user);
 
-    if (login.error.isNotEmpty) {
-      dialogShow(context, login.error.toString());
+    if (result.error.isNotEmpty) {
+      dialogShow(context, result.error.toString());
     }
 
-    if (login.firmaName.isNotEmpty && login.id != "0") {
-      buildDataBase(login.id, username, password, login.firmaName);
+    if (result.firmaName.isNotEmpty && result.id != "0") {
+      buildDataBase(result.id, login, password, result.firmaName);
       navigatorHome();
     }
+
   }
 
-  Future<void> buildDataBase(
-      String id, String login, String password, String firmaName) async {
+  Future<void> buildDataBase(String id, String login, String password, String firmaName) async {
     final DbOpenHelper dbHelper = DbOpenHelper();
     await dbHelper.deleteAllUsers();
     await dbHelper.insertUser(int.parse(id), login, password, firmaName);
@@ -226,31 +195,27 @@ class _LoginPageState extends State<LoginPage> {
         version = result;
       });
     } on PlatformException catch (e) {
-      setState(() {
-        version = "Failed to get: '${e.message}'.";
-      });
+      log("Ошибка: ${e.message}");
     }
   }
 
-  Future<void> getAndroidId() async {
+  Future<void> getDeviceId() async {
     try {
-      final String result = await Login.platform.invokeMethod('getAndroidId');
+      final String result = await platform.invokeMethod('getDeviceId');
       setState(() {
-        androidId = result;
+        deviceId = result;
       });
     } on PlatformException catch (e) {
-      setState(() {
-        androidId = "Failed to get ANDROID_ID: '${e.message}'.";
-      });
+      log("Ошибка: ${e.message}");
     }
   }
 
   Future<void> firmaName() async {
     final db = await DbOpenHelper().database;
     final result = await db.rawQuery("select FirmaName from _users");
-    firmaN = result.first['FirmaName'] as String;
-    setState(() {});
-    log("name $firmaN");
+    setState(() {
+      firmaN = result.first['FirmaName'] as String;
+    });
   }
 
   Future<void> saveLogin(String login) async {
@@ -302,8 +267,9 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   void navigatorHome() {
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => Home()),
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => HomePage()),
     );
   }
+
 }

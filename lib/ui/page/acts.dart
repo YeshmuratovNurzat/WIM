@@ -2,12 +2,8 @@ import 'dart:developer';
 import 'package:WIM/data/model/act_model.dart';
 import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:flutter/material.dart';
-import '../data/DbOpenHelper.dart';
+import '../../data/database/dbOpenHelper.dart';
 import 'act.dart';
-
-void main() {
-  runApp(const Acts());
-}
 
 class Acts extends StatelessWidget {
   const Acts({super.key});
@@ -60,6 +56,12 @@ class _ActsPageState extends State<ActsPage> {
       iconTheme: IconThemeData(color: Colors.white),
       title: Text("Aкты", style: TextStyle(color: Colors.white)),
       backgroundColor: Colors.blueAccent,
+      leading: IconButton(
+        icon: Icon(Icons.arrow_back),
+        onPressed: () {
+          Navigator.pop(context);
+        },
+      ),
       actions: [
         IconButton(
           icon: Icon(Icons.filter_alt_rounded),
@@ -184,14 +186,13 @@ class _ActsPageState extends State<ActsPage> {
     return Container(
       width: width,
       padding: EdgeInsets.all(8),
-      child: Center(
-          child: Text(maxLines: 1, overflow: TextOverflow.ellipsis, text)),
+      child: Center(child: Text(maxLines: 1, overflow: TextOverflow.ellipsis, text)),
     );
   }
 
   Widget button(context, String sector) {
     return Column(
-      mainAxisAlignment: MainAxisAlignment.end, // Расположить кнопку внизу
+      mainAxisAlignment: MainAxisAlignment.end,
       children: [
         SizedBox(
           width: double.infinity,
@@ -225,7 +226,7 @@ class _ActsPageState extends State<ActsPage> {
     );
   }
 
-  Widget buildFilterFields() {
+  Widget buildFilter() {
     final List<Map<String, String>> items = [
       {'name': 'Отобразить все', 'value': '3'},
       {'name': 'Отобразить принятые', 'value': '1'},
@@ -322,8 +323,7 @@ class _ActsPageState extends State<ActsPage> {
       isScrollControlled: true,
       builder: (BuildContext context) {
         return Padding(
-          padding:
-              EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
           child: Container(
             height: 420,
             width: double.infinity,
@@ -333,7 +333,7 @@ class _ActsPageState extends State<ActsPage> {
               children: [
                 Text('Фильтр', style: TextStyle(fontSize: 17)),
                 SizedBox(height: 10),
-                buildFilterFields(),
+                buildFilter(),
                 SizedBox(height: 15),
                 buildButton(context),
               ],
@@ -368,12 +368,10 @@ class _ActsPageState extends State<ActsPage> {
 
     if (value == "1") {
       // Отобразить принятые
-      sql =
-          "select  id, NumAct, DtDate, AccountId, Adress, CASE Sector WHEN '0' THEN 'Многоквартирный' WHEN '1' THEN 'Частный' WHEN '2' THEN 'Юредический' ELSE '-' END Sector, CASE StatusId WHEN '1' THEN 'Принят' WHEN '2' THEN 'Не принят' ELSE '-' END Status from Acts  where  StatusId=\"1\"  and Sector=\"${widget.sector}\" ";
+      sql = "select  id, NumAct, DtDate, AccountId, Adress, CASE Sector WHEN '0' THEN 'Многоквартирный' WHEN '1' THEN 'Частный' WHEN '2' THEN 'Юредический' ELSE '-' END Sector, CASE StatusId WHEN '1' THEN 'Принят' WHEN '2' THEN 'Не принят' ELSE '-' END Status from Acts  where  StatusId=\"1\"  and Sector=\"${widget.sector}\" ";
 
       if (accountController.text.isNotEmpty) {
-        sql +=
-            " and UPPER(AccountId) like UPPER('%${accountController.text}%')";
+        sql += " and UPPER(AccountId) like UPPER('%${accountController.text}%')";
       }
 
       if (numberActController.text.isNotEmpty) {
@@ -384,15 +382,13 @@ class _ActsPageState extends State<ActsPage> {
         sql += " and UPPER(Adress) like UPPER('%${addressController.text}%')";
       }
 
-      sql += " order by DtDate;";
+      sql += " order by id DESC;";
     } else if (value == "2") {
       // Отобразить не принятые
-      sql =
-          "select  id, NumAct, DtDate, AccountId, Adress, CASE Sector WHEN '0' THEN 'Многоквартирный' WHEN '1' THEN 'Частный' WHEN '2' THEN 'Юредический' ELSE '-' END Sector, CASE StatusId WHEN '1' THEN 'Принят' WHEN '2' THEN 'Не принят' ELSE '-' END Status from Acts  where  StatusId=\"2\"  and Sector=\"${widget.sector}\" ";
+      sql = "select  id, NumAct, DtDate, AccountId, Adress, CASE Sector WHEN '0' THEN 'Многоквартирный' WHEN '1' THEN 'Частный' WHEN '2' THEN 'Юредический' ELSE '-' END Sector, CASE StatusId WHEN '1' THEN 'Принят' WHEN '2' THEN 'Не принят' ELSE '-' END Status from Acts  where  StatusId=\"2\"  and Sector=\"${widget.sector}\" ";
 
       if (accountController.text.isNotEmpty) {
-        sql +=
-            " and UPPER(AccountId) like UPPER('%${accountController.text}%')";
+        sql += " and UPPER(AccountId) like UPPER('%${accountController.text}%')";
       }
 
       if (numberActController.text.isNotEmpty) {
@@ -403,15 +399,13 @@ class _ActsPageState extends State<ActsPage> {
         sql += " and UPPER(Adress) like UPPER('%${addressController.text}%')";
       }
 
-      sql += " order by DtDate;";
+      sql += " order by id DESC;";
     } else {
       // Отобразить все
-      sql =
-          "select  id, NumAct, DtDate, AccountId, Adress, CASE Sector WHEN '0' THEN 'Многоквартирный' WHEN '1' THEN 'Частный' WHEN '2' THEN 'Юредический' ELSE '-' END Sector, CASE StatusId WHEN '1' THEN 'Принят' WHEN '2' THEN 'Не принят' ELSE '-' END || ' ' || ifnull(StatusText,'') as Status from Acts where Sector=\"${widget.sector}\"";
+      sql = "select  id, NumAct, DtDate, AccountId, Adress, CASE Sector WHEN '0' THEN 'Многоквартирный' WHEN '1' THEN 'Частный' WHEN '2' THEN 'Юредический' ELSE '-' END Sector, CASE StatusId WHEN '1' THEN 'Принят' WHEN '2' THEN 'Не принят' ELSE '-' END || ' ' || ifnull(StatusText,'') as Status from Acts where Sector=\"${widget.sector}\"";
 
       if (accountController.text.isNotEmpty) {
-        sql +=
-            " and UPPER(AccountId) like UPPER('%${accountController.text}%')";
+        sql += " and UPPER(AccountId) like UPPER('%${accountController.text}%')";
       }
 
       if (numberActController.text.isNotEmpty) {
@@ -422,7 +416,7 @@ class _ActsPageState extends State<ActsPage> {
         sql += " and UPPER(Adress) like UPPER('%${addressController.text}%')";
       }
 
-      sql += " order by DtDate;";
+      sql += " order by id DESC;";
     }
 
     setActs(sql);
@@ -444,15 +438,24 @@ class _ActsPageState extends State<ActsPage> {
       String? address = (row['Adress'] ?? '') as String?;
       String? sector = (row['Sector'] ?? '') as String?;
       String? status = (row['Status'] ?? '') as String?;
+      log("numAct = $numAct");
+      log("status = $status");
 
-      listAct.add(ActModel(
-          id: id.toString(),
-          actNumber: numAct.toString(),
-          actDate: date.toString(),
-          accountNumber: accountId.toString(),
-          address: address.toString(),
-          sector: sector.toString(),
-          status: status.toString()));
+      if (numAct == "" && accountId == "") {
+        final db = await DbOpenHelper().database;
+        db.rawQuery("delete from Counters where act_id=$id");
+        db.rawQuery("delete from Acts where id=$id");
+        log("delete act");
+      } else {
+        listAct.add(ActModel(
+            id: id.toString(),
+            actNumber: numAct.toString(),
+            actDate: date.toString(),
+            accountNumber: accountId.toString(),
+            address: address.toString(),
+            sector: sector.toString(),
+            status: status.toString()));
+      }
     }
 
     setState(() {});

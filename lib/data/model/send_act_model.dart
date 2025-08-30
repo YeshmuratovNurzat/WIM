@@ -4,53 +4,53 @@ import 'package:WIM/data/model/water_meter_model.dart';
 import 'package:xml/xml.dart';
 
 class SendActModel {
-  final String ActId;
-  final String NumAct;
-  final String Sector;
-  final String DtDate;
-  final String UserId;
-  final String AccountId;
-  final String UchrId;
-  final String PdaId;
-  final String Lat;
-  final String Lon;
-  final String Alt;
-  final String TelMob;
-  final String TelDom;
-  final String File;
+  final String actId;
+  final String numAct;
+  final String sector;
+  final String dtDate;
+  final String userId;
+  final String accountId;
+  final String uchrId;
+  final String pdaId;
+  final String lat;
+  final String lon;
+  final String alt;
+  final String telMob;
+  final String telDom;
+  final String file;
 
   SendActModel(
-      {required this.ActId,
-      required this.NumAct,
-      required this.Sector,
-      required this.DtDate,
-      required this.UserId,
-      required this.AccountId,
-      required this.UchrId,
-      required this.PdaId,
-      required this.Lat,
-      required this.Lon,
-      required this.Alt,
-      required this.TelMob,
-      required this.TelDom,
-      required this.File});
+      {required this.actId,
+      required this.numAct,
+      required this.sector,
+      required this.dtDate,
+      required this.userId,
+      required this.accountId,
+      required this.uchrId,
+      required this.pdaId,
+      required this.lat,
+      required this.lon,
+      required this.alt,
+      required this.telMob,
+      required this.telDom,
+      required this.file});
 
   factory SendActModel.fromXml(XmlElement xml) {
     return SendActModel(
-      ActId: xml.getAttribute('ActId') ?? '',
-      NumAct: xml.getAttribute('NumAct') ?? '',
-      Sector: xml.getAttribute('Sector') ?? '',
-      DtDate: xml.getAttribute('DtDate') ?? '',
-      UserId: xml.getAttribute('UserId') ?? '',
-      AccountId: xml.getAttribute('AccountId') ?? '',
-      UchrId: xml.getAttribute('UchrId') ?? '',
-      PdaId: xml.getAttribute('PdaId') ?? '',
-      Lat: xml.getAttribute('Lat') ?? '',
-      Lon: xml.getAttribute('Lon') ?? '',
-      Alt: xml.getAttribute('Alt') ?? '',
-      TelMob: xml.getAttribute('TelMob') ?? '',
-      TelDom: xml.getAttribute('TelDom') ?? '',
-      File: xml.getAttribute('File') ?? '',
+      actId: xml.getAttribute('ActId') ?? '',
+      numAct: xml.getAttribute('NumAct') ?? '',
+      sector: xml.getAttribute('Sector') ?? '',
+      dtDate: xml.getAttribute('DtDate') ?? '',
+      userId: xml.getAttribute('UserId') ?? '',
+      accountId: xml.getAttribute('AccountId') ?? '',
+      uchrId: xml.getAttribute('UchrId') ?? '',
+      pdaId: xml.getAttribute('PdaId') ?? '',
+      lat: xml.getAttribute('Lat') ?? '',
+      lon: xml.getAttribute('Lon') ?? '',
+      alt: xml.getAttribute('Alt') ?? '',
+      telMob: xml.getAttribute('TelMob') ?? '',
+      telDom: xml.getAttribute('TelDom') ?? '',
+      file: xml.getAttribute('File') ?? '',
     );
   }
 
@@ -59,36 +59,36 @@ class SendActModel {
     builder.processing('xml', 'version="1.0" encoding="UTF-8"');
     builder.element('root', nest: () {
       builder.element('ActList', nest: () {
-        builder.attribute('ActId', ActId);
-        builder.attribute('NumAct', NumAct);
-        builder.attribute('Sector', Sector);
-        builder.attribute('DtDate', DtDate);
-        builder.attribute('UserId', UserId);
-        builder.attribute('AccountId', AccountId);
-        builder.attribute('UchrId', UchrId);
-        builder.attribute('PdaId', PdaId);
-        builder.attribute('Lat', Lat);
-        builder.attribute('Lon', Lon);
-        builder.attribute('Alt', Alt);
-        builder.attribute('TelMob', TelMob);
-        builder.attribute('TelDom', TelDom);
+        builder.attribute('ActId', actId);
+        builder.attribute('NumAct', numAct);
+        builder.attribute('Sector', sector);
+        builder.attribute('DtDate', dtDate);
+        builder.attribute('UserId', userId);
+        builder.attribute('AccountId', accountId);
+        builder.attribute('UchrId', uchrId);
+        builder.attribute('PdaId', pdaId);
+        builder.attribute('Lat', lat);
+        builder.attribute('Lon', lon);
+        builder.attribute('Alt', alt);
+        builder.attribute('TelMob', telMob);
+        builder.attribute('TelDom', telDom);
       });
-      builder.element('ActFile', nest: File);
+      builder.element('ActFile', nest: file);
       builder.element('Counter', nest: () {
-        builder.attribute('CounterId', waterMeter.CounterId);
-        builder.attribute('Kpuid', waterMeter.Kpuid);
-        builder.attribute('TypeMeterId', waterMeter.TypeMeterId);
-        builder.attribute('TypSituId', waterMeter.TypSituId);
-        builder.attribute('SerialNumber', waterMeter.SerialNumber);
-        builder.attribute('DateVerif', waterMeter.DateVerif);
-        builder.attribute('ActionId', waterMeter.ActionId);
-        builder.attribute('SealNumber', waterMeter.SealNumber);
-        builder.attribute('Readout', waterMeter.Readout);
-        builder.attribute('CdDate', waterMeter.CdDate);
-        builder.attribute('RpuId', waterMeter.RpuId);
-        builder.attribute('Diameter', waterMeter.Diameter);
+        builder.attribute('CounterId', waterMeter.counterId);
+        builder.attribute('Kpuid', waterMeter.kpuid);
+        builder.attribute('TypeMeterId', waterMeter.typeMeterId);
+        builder.attribute('TypSituId', waterMeter.typSituId);
+        builder.attribute('SerialNumber', waterMeter.serialNumber);
+        builder.attribute('DateVerif', waterMeter.dateVerif);
+        builder.attribute('ActionId', waterMeter.actionId);
+        builder.attribute('SealNumber', waterMeter.sealNumber);
+        builder.attribute('Readout', waterMeter.readout);
+        builder.attribute('CdDate', waterMeter.cdDate);
+        builder.attribute('RpuId', waterMeter.rpuId);
+        builder.attribute('Diameter', waterMeter.diameter);
       });
-      builder.element('Photo', nest: waterMeter.PhotoName);
+      builder.element('Photo', nest: waterMeter.photoName);
     });
     final document = builder.buildDocument();
     log("xml ${document.toXmlString()}");

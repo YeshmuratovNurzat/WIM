@@ -1,31 +1,11 @@
 import 'dart:developer';
-import 'package:WIM/domain/repo/SettingRepository.dart';
-import 'package:WIM/ui/settings.dart';
-import 'package:WIM/ui/viewModel/SettingViewModel.dart';
-import 'package:dio/dio.dart';
+import 'package:WIM/ui/page/settings.dart';
+import 'package:WIM/ui/viewModel/settingViewModel.dart';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
-import '../data/DbOpenHelper.dart';
-import '../data/network/Api.dart';
+import '../../data/database/dbOpenHelper.dart';
 import 'acts.dart';
-
-void main() {
-  final dio = Dio();
-  final apiService = Api(dio);
-  final settingRepository = SettingRepository(apiService);
-
-  runApp(
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider(
-            create: (_) => SettingViewModel(settingRepository)),
-        // Другие провайдеры, если нужно
-      ],
-      child: Home(),
-    ),
-  );
-}
 
 class Home extends StatelessWidget {
   const Home({super.key});
@@ -33,7 +13,6 @@ class Home extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      debugShowCheckedModeBanner: false,
       home: const HomePage(),
     );
   }
@@ -55,8 +34,7 @@ class _HomePageState extends State<HomePage> {
 
     if (result.isEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-        final settingViewModel =
-            Provider.of<SettingViewModel>(context, listen: false);
+        final settingViewModel = Provider.of<SettingViewModel>(context, listen: false);
         settingViewModel.getTypeApartmentSector();
         settingViewModel.getTypePrivateSector();
         settingViewModel.getTypeLegalSector();
@@ -78,31 +56,37 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: buildAppBar(),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0x00fffc95), Colors.white],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+    return WillPopScope(
+        onWillPop: () async {
+          Navigator.of(context).pop();
+          return false;
+        },
+      child: Scaffold(
+        appBar: buildAppBar(),
+        body: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0x00fffc95), Colors.white],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(15),
+            child: Column(
+              children: [
+                buildWidgetApartmentSector(context),
+                SizedBox(height: 12),
+                buildWidgetPrivateSector(context),
+                SizedBox(height: 12),
+                buildWidgetLegalSector(context),
+                SizedBox(height: 12),
+                buildBtnSettings(context),
+              ],
+            ),
           ),
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(15),
-          child: Column(
-            children: [
-              buildWidgetApartmentSector(context),
-              SizedBox(height: 12),
-              buildWidgetPrivateSector(context),
-              SizedBox(height: 12),
-              buildWidgetLegalSector(context),
-              SizedBox(height: 12),
-              buildBtnSettings(context),
-            ],
-          ),
-        ),
-      ),
+      )
     );
   }
 
@@ -116,6 +100,7 @@ class _HomePageState extends State<HomePage> {
         style: TextStyle(color: Colors.white),
       ),
       backgroundColor: Colors.blueAccent,
+
     );
   }
 

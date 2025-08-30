@@ -1,8 +1,10 @@
 import 'dart:convert';
-import 'package:WIM/data/model/water_meter_model.dart';
+
 import 'package:retrofit/dio.dart';
-import '../../data/model/search_model.dart';
-import '../../data/network/Api.dart';
+
+import '../data/model/search_model.dart';
+import '../data/model/water_meter_model.dart';
+import '../data/network/api.dart';
 
 class SettingRepository {
   late final Api _apiService;
@@ -130,7 +132,7 @@ class SettingRepository {
     return await _apiService.sendAct(
         "test",
         "test",
-        "50", // stype — Многоквартирный сектор
+        "56", // stype — Многоквартирный сектор 50
         encodedXml);
   }
 }

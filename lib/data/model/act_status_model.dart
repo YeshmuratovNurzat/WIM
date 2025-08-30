@@ -3,6 +3,6 @@ class ActStatus {
   final String statusName;
   final String actId;
 
-  ActStatus(
-      {required this.statusId, required this.statusName, required this.actId});
+  ActStatus({required this.statusId, required this.statusName, required this.actId});
+
 }

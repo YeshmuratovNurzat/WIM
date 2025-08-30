@@ -9,7 +9,7 @@ class DbOpenHelper {
   static Database? _database;
 
   static const String DB_NAME = 'WaterMeterAct.db';
-  static const int DB_VERSION = 1;
+  static const int DB_VERSION = 2;
 
   DbOpenHelper._internal();
 
@@ -88,6 +88,7 @@ class DbOpenHelper {
         Readout TEXT,
         TypSituId TEXT,
         PhotoName TEXT,
+        PhotoNameActOutputs TEXT,
         CdDate TEXT,
         RpuId TEXT,
         Diameter TEXT

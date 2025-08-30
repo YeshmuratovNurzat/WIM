@@ -2,21 +2,21 @@ import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
 import 'package:WIM/data/model/search_model.dart';
-import 'package:WIM/data/model/send_act_model.dart';
-import 'package:WIM/ui/searchAccount.dart';
+import 'package:WIM/ui/page/searchAccount.dart';
 import 'package:WIM/ui/util/global.dart';
-import 'package:WIM/ui/viewModel/SettingViewModel.dart';
-import 'package:WIM/ui/waterMeter.dart';
+import 'package:WIM/ui/viewModel/settingViewModel.dart';
+import 'package:WIM/ui/page/waterMeter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 import 'package:open_file/open_file.dart';
 import 'package:provider/provider.dart';
 import 'package:sqflite/sqflite.dart';
-import '../data/DbOpenHelper.dart';
-import '../data/model/water_meter_model.dart';
+import '../../data/database/dbOpenHelper.dart';
+import '../../data/model/water_meter_model.dart';
 
 void main() {
   runApp(const Act());
@@ -30,10 +30,6 @@ class Act extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
-      ),
       home: ActPage(sector: '', id: ''),
     );
   }
@@ -52,9 +48,8 @@ class ActPage extends StatefulWidget {
 class _ActPageState extends State<ActPage> {
   DateTime? _selectedDate;
   String _id = "";
-  String sector = "";
-  String userId = "";
-  bool addressVisible = false;
+  String _sector = "";
+  bool _addressVisible = false;
 
   String? actId = "";
   final ImagePicker _picker = ImagePicker();
@@ -78,6 +73,7 @@ class _ActPageState extends State<ActPage> {
 
   final FocusNode _buttonFocusNode = FocusNode();
   bool enabledBtn = true;
+  bool visibilityActions = true;
 
   @override
   void initState() {
@@ -90,8 +86,7 @@ class _ActPageState extends State<ActPage> {
 
   @override
   Widget build(BuildContext context) {
-    final settingViewModel =
-        Provider.of<SettingViewModel>(context, listen: true);
+    final settingViewModel = Provider.of<SettingViewModel>(context, listen: true);
 
     return Scaffold(
       appBar: buildAppBar(settingViewModel),
@@ -128,39 +123,44 @@ class _ActPageState extends State<ActPage> {
         },
       ),
       actions: [
-        IconButton(
-          icon: Icon(Icons.save),
-          onPressed: () async {
-            if (await saveAct(context)) {
-              Navigator.pop(context, "act");
-            }
-          },
-        ),
+        Visibility(
+            visible: visibilityActions,
+            child: IconButton(
+              icon: Icon(Icons.save),
+              onPressed: () async {
+                final result = await saveAct();
+                if (result) {
+                  Navigator.pop(context, "act");
+                } else {
+                  print("Не удалось сохранить акт");
+                }
+              },
+            )),
         IconButton(
           icon: Icon(Icons.delete),
           onPressed: () {
             deleteDialogShow(context);
           },
         ),
-        IconButton(
-          icon: Icon(Icons.send_outlined),
-          onPressed: () async {
-            await actionSend(settingViewModel);
-          },
-        ),
+        Visibility(
+            visible: visibilityActions,
+            child: IconButton(
+              icon: Icon(Icons.send_outlined),
+              onPressed: () async {
+                await send(settingViewModel);
+              },
+            ))
       ],
     );
   }
 
-  SingleChildScrollView buildSingleChildScrollView(
-      BuildContext context, SettingViewModel settingViewModel) {
+  Widget buildSingleChildScrollView(BuildContext context, SettingViewModel settingViewModel) {
     return SingleChildScrollView(
       child: buildContainer(context, settingViewModel),
     );
   }
 
-  Container buildContainer(
-      BuildContext context, SettingViewModel settingViewModel) {
+  Widget buildContainer(BuildContext context, SettingViewModel settingViewModel) {
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
@@ -170,7 +170,7 @@ class _ActPageState extends State<ActPage> {
         ),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(10.0),
+        padding: const EdgeInsets.all(10),
         child: Column(
           children: [
             buildNumberAct(),
@@ -196,7 +196,7 @@ class _ActPageState extends State<ActPage> {
     );
   }
 
-  Row buildGeo() {
+  Widget buildGeo() {
     return Row(
       children: [
         Expanded(
@@ -266,7 +266,7 @@ class _ActPageState extends State<ActPage> {
     );
   }
 
-  SizedBox buildListWaterMeter() {
+  Widget buildListWaterMeter() {
     return SizedBox(
       height: 300,
       child: SingleChildScrollView(
@@ -274,19 +274,25 @@ class _ActPageState extends State<ActPage> {
         child: SizedBox(
           width: 1300,
           child: ListView.builder(
+            physics: NeverScrollableScrollPhysics(), // Отключает прокрутку
             shrinkWrap: true,
             scrollDirection: Axis.vertical,
             itemCount: itemWaterMeter.length + 1,
             itemBuilder: (context, index) {
               if (index == 0) return buildHeaderRow();
               WaterMeterModel act = itemWaterMeter[index - 1];
-              return GestureDetector(
+              return InkWell(
                 onTap: () {
-                  log("act id: ${act.id}");
                   navigateEditWaterMeter(context, act.id);
                 },
                 child: buildDataRow(act),
               );
+              // return GestureDetector(
+              //   onTap: () {
+              //     navigateEditWaterMeter(context, act.id);
+              //   },
+              //   child: buildDataRow(act),
+              // );
             },
           ),
         ),
@@ -294,7 +300,7 @@ class _ActPageState extends State<ActPage> {
     );
   }
 
-  SizedBox buildBtn(BuildContext context) {
+  Widget buildBtn(BuildContext context) {
     return SizedBox(
       width: double.infinity,
       height: 55,
@@ -333,107 +339,113 @@ class _ActPageState extends State<ActPage> {
           showCursor: false,
           keyboardType: TextInputType.text,
           onTap: () {
-            showModalBottomSheet(
-                context: context,
-                builder: (BuildContext context) {
-                  return Container(
-                    height: 200,
-                    width: double.infinity,
-                    padding: EdgeInsets.all(20.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Фото (акт)', style: TextStyle(fontSize: 18)),
-                        SizedBox(height: 10),
-                        Row(
-                          children: [
-                            ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.blueAccent),
-                              child: Text(
-                                'Фото',
-                                style: TextStyle(color: Colors.white),
-                              ),
-                              onPressed: () {
-                                pickImage(ImageSource.camera);
-                                Navigator.pop(context);
-                              },
-                            ),
-                            SizedBox(width: 10),
-                            ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.blueAccent),
-                              child: Text(
-                                'Выбрать',
-                                style: TextStyle(color: Colors.white),
-                              ),
-                              onPressed: () {
-                                pickImage(ImageSource.gallery);
-                                Navigator.pop(context);
-                              },
-                            ),
-                            SizedBox(width: 10),
-                            ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.blueAccent),
-                              child: Text(
-                                'Отобразить',
-                                style: TextStyle(color: Colors.white),
-                              ),
-                              onPressed: () {
-                                openFile();
-                                Navigator.pop(context);
-                              },
-                            ),
-                          ],
-                        ),
-                        SizedBox(
-                          height: 20,
-                        ),
-                        SizedBox(
-                          width: double.infinity,
-                          height: 50,
-                          child: ElevatedButton(
-                            onPressed: () {
-                              Navigator.pop(context);
-                            },
-                            style: ElevatedButton.styleFrom(
-                              foregroundColor: Colors.blue,
-                              backgroundColor: Colors.white,
-                              shadowColor: Colors.white,
-                              elevation: 2,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            child: Text(
-                              'Отмена',
-                              style:
-                                  TextStyle(fontSize: 16, color: Colors.blue),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                });
+            bottomSheetView(context);
           }),
     );
   }
 
-  Visibility buildAddress() {
+  void bottomSheetView(BuildContext context) {
+    showModalBottomSheet(
+        context: context,
+        builder: (BuildContext context) {
+          return Container(
+            height: 200,
+            width: double.infinity,
+            padding: EdgeInsets.all(20.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Фото (акт)', style: TextStyle(fontSize: 18)),
+                SizedBox(height: 10),
+                Row(
+                  children: [
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blueAccent),
+                      child: Text(
+                        'Фото',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                      onPressed: () {
+                        pickImage(ImageSource.camera);
+                        Navigator.pop(context);
+                      },
+                    ),
+                    SizedBox(width: 10),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blueAccent),
+                      child: Text(
+                        'Выбрать',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                      onPressed: () {
+                        pickImage(ImageSource.gallery);
+                        Navigator.pop(context);
+                      },
+                    ),
+                    SizedBox(width: 10),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blueAccent),
+                      child: Text(
+                        'Отобразить',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                      onPressed: () {
+                        openFile();
+                        Navigator.pop(context);
+                      },
+                    ),
+                  ],
+                ),
+                SizedBox(
+                  height: 20,
+                ),
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      foregroundColor: Colors.blue,
+                      backgroundColor: Colors.white,
+                      shadowColor: Colors.white,
+                      elevation: 2,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: Text(
+                      'Отмена',
+                      style: TextStyle(fontSize: 16, color: Colors.blue),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        });
+  }
+
+  Widget buildAddress() {
+    FocusNode focusNode = FocusNode(canRequestFocus: false);
     return Visibility(
-      visible: addressVisible,
+      visible: _addressVisible,
       child: Column(
         children: [
           SizedBox(
-            height: 50,
+            height: 55,
             child: TextField(
+              readOnly: true,
+              focusNode: focusNode,
               decoration: InputDecoration(
                 labelText: "Адрес",
                 border: OutlineInputBorder(),
               ),
-              keyboardType: TextInputType.phone,
+              keyboardType: TextInputType.text,
               controller: addressController,
             ),
           ),
@@ -458,7 +470,8 @@ class _ActPageState extends State<ActPage> {
   }
 
   Widget buildPhoneMobile() {
-    var maskFormatter = new MaskTextInputFormatter(
+
+    var maskFormatter = MaskTextInputFormatter(
         mask: '+# (###) ###-##-##',
         filter: {"#": RegExp(r'[0-9]')},
         type: MaskAutoCompletionType.lazy);
@@ -477,8 +490,7 @@ class _ActPageState extends State<ActPage> {
     );
   }
 
-  Widget buildPersonalAccount(
-      BuildContext context, SettingViewModel settingViewModel) {
+  Widget buildPersonalAccount(BuildContext context, SettingViewModel settingViewModel) {
     return SizedBox(
       height: 50,
       child: Row(
@@ -526,7 +538,7 @@ class _ActPageState extends State<ActPage> {
                 border: OutlineInputBorder(),
               ),
               controller: dateController,
-              keyboardType: TextInputType.text,
+              keyboardType: TextInputType.number,
             ),
           ),
           SizedBox(width: 10.0),
@@ -588,17 +600,17 @@ class _ActPageState extends State<ActPage> {
           IntrinsicHeight(
             child: Row(
               children: [
-                buildDataCell(act.CounterId, 80),
-                buildDataCell(act.ActionId, 100),
-                buildDataCell(act.SerialNumber, 150),
-                buildDataCell(act.Kpuid, 130),
-                buildDataCell(act.TypeMeterId, 100),
-                buildDataCell(act.Calibr, 100),
-                buildDataCell(act.DateVerif, 150),
-                buildDataCell(act.Readout, 100),
-                buildDataCell(act.SealNumber, 150),
-                buildDataCell(act.PhotoName, 100),
-                buildDataCell(act.StatusId, 100),
+                buildDataCell(act.counterId, 80),
+                buildDataCell(act.actionId, 100),
+                buildDataCell(act.serialNumber, 150),
+                buildDataCell(act.kpuid, 130),
+                buildDataCell(act.typeMeterId, 100),
+                buildDataCell(act.calibr, 100),
+                buildDataCell(act.dateVerif, 150),
+                buildDataCell(act.readout, 100),
+                buildDataCell(act.sealNumber, 150),
+                buildDataCell(act.photoName, 100),
+                buildDataCell(act.statusId, 100),
               ],
             ),
           ),
@@ -629,20 +641,19 @@ class _ActPageState extends State<ActPage> {
     );
   }
 
-  Widget buildResult(BuildContext context, SettingViewModel settingViewModel) {
-    return Consumer<SettingViewModel>(
-      builder: (context, viewModel, child) {
-        if (viewModel.resultModel != null &&
-            viewModel.resultModel?.actMsg != null) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            dialogShow(context, viewModel.resultModel?.actMsg.toString() ?? "");
-          });
-          log("Result Model: ${viewModel.resultModel?.actMsg.toString()}");
-        }
-        return SizedBox();
-      },
-    );
-  }
+  // Widget buildResult(BuildContext context, SettingViewModel settingViewModel) {
+  //   return Consumer<SettingViewModel>(
+  //     builder: (context, viewModel, child) {
+  //       if (viewModel.resultModel != null && viewModel.resultModel?.actMsg != null) {
+  //         WidgetsBinding.instance.addPostFrameCallback((_) {
+  //           dialogShow(context, viewModel.resultModel?.actMsg.toString() ?? "");
+  //         });
+  //         log("Result Model: ${viewModel.resultModel?.actMsg.toString()}");
+  //       }
+  //       return SizedBox();
+  //     },
+  //   );
+  // }
 
   Future<void> getAndroidId() async {
     try {
@@ -652,51 +663,49 @@ class _ActPageState extends State<ActPage> {
       });
     } on PlatformException catch (e) {
       setState(() {
-        androidId = "Failed to get ANDROID_ID: '${e.message}'.";
+        androidId = "Ошибка: '${e.message}'.";
       });
     }
   }
 
   Future<void> _selectDate(BuildContext context) async {
+    String? formattedDate;
+
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: DateTime.now(), // Set the initial date
-      firstDate: DateTime(2000), // Set the minimum selectable date
-      lastDate: DateTime(2100), // Set the maximum selectable date
+      initialDate: DateTime.now(),
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
     );
 
     if (picked != null && picked != _selectedDate) {
       setState(() {
         _selectedDate = picked;
-        dateController.text = _selectedDate == null
-            ? 'No date selected!'
-            : '${_selectedDate?.day.toString()}.${_selectedDate?.month.toString()}.${_selectedDate?.year.toString()}';
+        formattedDate = DateFormat('dd.MM.yyyy').format(picked);
+        dateController.text = formattedDate.toString();
       });
     }
   }
 
   Future<void> getData() async {
     _id = widget.id;
-    sector = widget.sector;
+    _sector = widget.sector;
     log("get act id: $_id");
-    log("get sector: $sector");
+    log("get sector: $_sector");
     setState(() {});
   }
 
-  // Создаём новый акт
   Future<void> createNewAct() async {
-    if (_id.isEmpty || _id == "") {
+    if (_id == null || _id == "") {
       final db = await DbOpenHelper().database;
-      String sql = "insert into Acts(Sector)values(\"$sector\");";
+      String sql = "insert into Acts(Sector)values(\"$_sector\");";
       await db.execute(sql);
-      log("create new act");
       fetchMaxId(db);
     }
   }
 
   Future<void> fetchMaxId(Database db) async {
-    final List<Map<String, dynamic>> result =
-        await db.rawQuery("select max(id) as max_id from Acts");
+    final List<Map<String, dynamic>> result = await db.rawQuery("select max(id) as max_id from Acts");
 
     if (result.isNotEmpty) {
       final String? maxId = result.first['max_id']?.toString();
@@ -710,8 +719,7 @@ class _ActPageState extends State<ActPage> {
   Future<void> getAct() async {
     if (_id.isNotEmpty) {
       final db = await DbOpenHelper().database;
-      final result = await db.rawQuery(
-          "select ifnull(a.ActId,'') ActId,ifnull(StatusId,'') StatusId,a.Sector,a.NumAct,a.PhoneM,a.PhoneH,a.DtDate,a.AccountId,a.Adress,ifnull(a.UchrId,'') UchrId,ifnull(a.lon,'') lon,ifnull(a.lat,'') lat,ifnull(a.alt,'') alt,a.PhotoName from Acts a where a.id=$_id;");
+      final result = await db.rawQuery("select ifnull(a.ActId,'') ActId,ifnull(StatusId,'') StatusId,a.Sector,a.NumAct,a.PhoneM,a.PhoneH,a.DtDate,a.AccountId,a.Adress,ifnull(a.UchrId,'') UchrId,ifnull(a.lon,'') lon,ifnull(a.lat,'') lat,ifnull(a.alt,'') alt,a.PhotoName from Acts a where a.id=$_id;");
 
       for (var row in result) {
         if (row.isNotEmpty) {
@@ -729,7 +737,6 @@ class _ActPageState extends State<ActPage> {
           String? longitude = (row['lon'] ?? '') as String?;
           String? latitude = (row['lat'] ?? '') as String?;
           String? statusId = (row['StatusId'] ?? '') as String?;
-          log("status =$statusId");
 
           if (statusId == "1") {
             enabledBtn = false;
@@ -740,7 +747,7 @@ class _ActPageState extends State<ActPage> {
           accountController.text = account.toString();
           phoneMobileController.text = phoneM.toString();
           phoneHomeController.text = phoneH.toString();
-          addressVisible = true;
+          _addressVisible = true;
           addressController.text = address.toString();
 
           photoController.text = photo.toString();
@@ -748,7 +755,7 @@ class _ActPageState extends State<ActPage> {
           latitudeController.text = latitude.toString();
           longitudeController.text = longitude.toString();
 
-          await updateCountersTable(sector, _id);
+          await updateCountersTable(_sector, _id);
         }
       }
 
@@ -758,7 +765,6 @@ class _ActPageState extends State<ActPage> {
 
   Future<void> getCurrentLocation() async {
     try {
-      // Запрашиваем разрешение на доступ к геолокации
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
         return Future.error('Location services are disabled.');
@@ -777,9 +783,7 @@ class _ActPageState extends State<ActPage> {
             'Location permissions are permanently denied, we cannot request permissions.');
       }
 
-      // Получаем текущие координаты
-      Position position = await Geolocator.getCurrentPosition(
-          desiredAccuracy: LocationAccuracy.high);
+      Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
 
       setState(() {
         altitudeController.text = position.altitude.toString();
@@ -789,164 +793,109 @@ class _ActPageState extends State<ActPage> {
       });
     } catch (e) {
       setState(() {
-        log("Error: $e");
+        log("Ошибка: $e");
       });
     }
   }
 
   Future<String> encodeImageToBase64(String path) async {
-    final bytes = await File(path).readAsBytes(); // Прочитать файл как байты
-    final base64Image = base64Encode(bytes); // Закодировать в Base64
+    final bytes = await File(path).readAsBytes();
+    final base64Image = base64Encode(bytes);
     return base64Image;
   }
 
-  Future<void> actionSend(SettingViewModel settingViewModel) async {
-    if (await checkCounter() && await checkAct(true)) {
-      if (await saveAct(context)) {
+  Future<void> send(SettingViewModel settingViewModel) async {
+    final resultCheckCounter = await checkCounter();
+    final resultCheckAct = await checkAct(true);
+
+    if (resultCheckCounter && resultCheckAct) {
+      final resultSaveAct = await saveAct();
+      if (resultSaveAct) {
         String? userId = Global().userId;
         final db = await DbOpenHelper().database;
 
         String numberAct = numberActController.text.toString();
-        String phoneM = phoneMobileController.text.toString();
-        String phoneH = phoneHomeController.text.toString();
         String date = dateController.text.toString();
         String accountId = accountController.text.toString();
+        String phoneM = phoneMobileController.text.toString();
+        String phoneH = phoneHomeController.text.toString();
         String address = addressController.text.toString();
         String lat = latitudeController.text.toString();
         String lon = longitudeController.text.toString();
         String altitude = altitudeController.text.toString();
-        String photoName = photoController.text.toString();
+        String photo = photoController.text.toString();
 
-        final file = await encodeImageToBase64(photoName);
+        final file = await encodeImageToBase64(photo);
 
-        String encodedImage = file;
+        String xml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><root><ActList ActId=\"$actId\" NumAct=\"$numberAct\" Sector=\"$_sector\" DtDate=\"$date\" UserId=\"$userId\" AccountId=\"$accountId\" UchrId=\"\" PdaId=\"$androidId\" Lat=\"$lat\" Lon=\"$lon\" Alt=\"$altitude\" TelMob=\"$phoneM\" TelDom=\"$phoneH\"><ActFile>$file</ActFile>";
 
-        String xml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><root>" +
-            "<ActList ActId=\"" +
-            actId.toString() +
-            "\" NumAct=\"" +
-            numberAct +
-            "\" Sector=\"" +
-            sector +
-            "\" DtDate=\"" +
-            date +
-            "\" UserId=\"" +
-            userId.toString() +
-            "\" AccountId=\"" +
-            accountId +
-            "\" UchrId=\"" +
-            "" +
-            "\" PdaId=\"" +
-            androidId +
-            "\" Lat=\"" +
-            lat +
-            "\" Lon=\"" +
-            lon +
-            "\" Alt=\"" +
-            altitude +
-            "\" TelMob=\"" +
-            phoneM +
-            "\" TelDom=\"" +
-            phoneH +
-            "\">" +
-            "<ActFile>" +
-            encodedImage +
-            "</ActFile>";
-
-        var sendAct = SendActModel(
-            ActId: "",
-            NumAct: numberAct,
-            Sector: sector,
-            DtDate: date,
-            UserId: userId.toString(),
-            AccountId: accountId,
-            UchrId: '',
-            PdaId: androidId,
-            Lat: lat,
-            Lon: lon,
-            Alt: altitude,
-            TelMob: phoneM,
-            TelDom: phoneH,
-            File: encodedImage);
-
-        final sql = await db.rawQuery(
-            "select ifnull(CounterId,'') CounterId,ifnull(Kpuid,'') Kpuid,ifnull(TypeMeterId,'') TypeMeterId,ifnull(SerialNumber,'') SerialNumber,ifnull(DateVerif,'') DateVerif,ifnull(ActionId,'') ActionId,ifnull(SealNumber,'') SealNumber,ifnull(Readout,'') Readout,ifnull(TypSituId,'') TypSituId,PhotoName,CdDate,ifnull(RpuId,'') RpuId,ifnull(Diameter,'') Diameter from Counters where act_id=\"$_id\";");
-        log("counters sql = $sql");
-
-        int? id;
-        int? idAct;
-        String? counterId;
-        String? kpuId;
-        String? calibr;
-        String? typeMeterName;
-        String? typSituId;
-        String? serialNumber;
-        String? _date;
-        String? actionName;
-        String? sealNumber;
-        String? statusName;
-        String? readout;
-        String? _photoName;
-        String? cdDate;
-        String? diameter;
-        String? rpuId;
+        final sql = await db.rawQuery("select ifnull(CounterId,'') CounterId,ifnull(Kpuid,'') Kpuid,ifnull(TypeMeterId,'') TypeMeterId,ifnull(SerialNumber,'') SerialNumber,ifnull(DateVerif,'') DateVerif,ifnull(ActionId,'') ActionId,ifnull(SealNumber,'') SealNumber,ifnull(Readout,'') Readout,ifnull(TypSituId,'') TypSituId,PhotoName,PhotoNameActOutputs,CdDate,ifnull(RpuId,'') RpuId,ifnull(Diameter,'') Diameter from Counters where act_id=\"$_id\";");
+        log("counter sql = $sql");
 
         for (var row in sql) {
-          log("row send water:$row");
-          counterId = (row['CounterId'] ?? '') as String?;
-          kpuId = (row['Kpuid'] ?? '') as String?;
-          calibr = (row['Calibr'] ?? '') as String?;
-          typeMeterName = (row['TypeMeterId'] ?? '') as String?;
-          typSituId = (row['TypSituId'] ?? '') as String?;
-          serialNumber = (row['SerialNumber'] ?? '') as String?;
-          _date = (row['DateVerif'] ?? '') as String?;
-          actionName = (row['ActionId'] ?? '') as String?;
-          sealNumber = (row['SealNumber'] ?? '') as String?;
-          statusName = (row['Status_name'] ?? '') as String?;
-          readout = (row['Readout'] ?? '') as String?;
-          _photoName = (row['PhotoName'] ?? '') as String?;
-          cdDate = (row['CdDate'] ?? '') as String?;
-          diameter = (row['Diameter'] ?? '') as String?;
-          rpuId = (row['RpuId'] ?? '') as String?;
-          final photoBase = await encodeImageToBase64(_photoName.toString());
+          print("row result: $row");
 
-          log("id:$id");
-          log("_date:$_date");
+          String? counterId = (row['CounterId'] ?? '') as String?;
+          String? kpuId = (row['Kpuid'] ?? '') as String?;
+          String? calibr = (row['Calibr'] ?? '') as String?;
+          String? typeMeterName = (row['TypeMeterId'] ?? '') as String?;
+          String? typSituId = (row['TypSituId'] ?? '') as String?;
+          String? serialNumber = (row['SerialNumber'] ?? '') as String?;
+          String? date = (row['DateVerif'] ?? '') as String?;
+          String? actionName = (row['ActionId'] ?? '') as String?;
+          String? sealNumber = (row['SealNumber'] ?? '') as String?;
+          String? statusName = (row['Status_name'] ?? '') as String?;
+          String? readout = (row['Readout'] ?? '') as String?;
+          String? photoName = (row['PhotoName'] ?? '') as String?;
+          String? photoNameActOutputs = (row['PhotoNameActOutputs'] ?? '') as String?;
+          String? cdDate = (row['CdDate'] ?? '') as String?;
+          String? diameter = (row['Diameter'] ?? '') as String?;
+          String? rpuId = (row['RpuId'] ?? '') as String?;
 
           xml += "<Counter";
-          xml +=
-              " CounterId=\"${counterId}\""; //"Идентификатор ИПУ в систему АИСЦРА", Type – число
-          xml += " Kpuid=\"${kpuId}\""; //”Класс прибор учета”
-          xml +=
-              " TypeMeterId=\"${typeMeterName}\""; //"Код типа прибора учета", Type – число
-          xml +=
-              " SerialNumber=\"${serialNumber}\""; //"Заводской номер", Type – текст
-          xml +=
-              " DateVerif=\"${_date}\""; //"Дата поверки", Type – дата формат(‘DD.MM.YYYY’)
-          xml +=
-              " ActionId=\"${actionName}\""; //"ID действия(1-Снятие,10-Установка, 9-Показание ПУ)”, Type – число
-          xml += " SealNumber=\"${sealNumber}\""; //"Номер пломбы", Type – текст
-          xml += " Readout=\"${readout}\""; //"Показания (куб)", Type – число
-          xml += " TypSituId=\"${typSituId}\"";
-          xml += " CdDate=\"${cdDate}\""; //Дата фотографирования
-          xml +=
-              " RpuId=\"${rpuId}\""; // "Код место установки", Type – число (выбирается из справочника)
-          xml +=
-              " Diameter=\"${diameter}\""; // " Диаметр водомера", Type – число(имеет значение 15, 20, 25,30,32,40,50,65,80,100,125,150,200)
+          xml += " CounterId=\"$counterId\"";
+          xml += " Kpuid=\"$kpuId\"";
+          xml += " TypeMeterId=\"$typeMeterName\"";
+          xml += " SerialNumber=\"$serialNumber\"";
+          xml += " DateVerif=\"$date\"";
+          xml += " ActionId=\"$actionName\"";
+          xml += " SealNumber=\"$sealNumber\"";
+          xml += " Readout=\"$readout\"";
+          xml += " TypSituId=\"$typSituId\"";
+          xml += " CdDate=\"$cdDate\"";
+          xml += " RpuId=\"$rpuId\"";
+          xml += " Diameter=\"$diameter\"";
           xml += ">";
 
-          xml += "<Photo>" + photoBase + "</Photo>";
+          final photoIpu = await encodeImageToBase64(photoName.toString());
+          xml += "<Photo>";
+          xml += "<Photo1>$photoIpu</Photo1>";
+
+          String photoActOutputs = "";
+
+          if (photoNameActOutputs != "") {
+            photoActOutputs = await encodeImageToBase64(photoNameActOutputs.toString());
+
+            if (photoActOutputs.isNotEmpty) {
+              xml += "<Photo2>$photoActOutputs</Photo2>";
+            }
+
+          }
+
+          xml += "</Photo>";
+
           xml += "</Counter>";
+
         }
 
         xml += "</ActList>" + "</root>";
 
-        log("xml " + xml);
+        log("final xml = $xml");
+        print("final xml = $xml");
 
         final result = await settingViewModel.sendAct(xml);
         if (result != null) {
-          dialogShow(context,
-              "${result.actMsg.toString()} ${result.statusName.toString()}");
+          dialogShow(context, "${result.actMsg.toString()} ${result.statusName.toString()}");
 
           if (result.statusId == "1") {
             final db = await DbOpenHelper().database;
@@ -957,14 +906,10 @@ class _ActPageState extends State<ActPage> {
             log("actId = $actId");
 
             if (actId == "null") {
-              sql =
-                  "update Acts set StatusId=${result.statusId} where id=$_id;";
+              sql = "update Acts set StatusId=${result.statusId} where id=$_id;";
             } else {
-              sql =
-                  "update Acts set ActId=$actId, StatusId=${result.statusId} where id=$_id;";
+              sql = "update Acts set ActId=$actId, StatusId=${result.statusId} where id=$_id;";
             }
-
-            log("sql acts $sql");
 
             await db.rawQuery(sql);
           }
@@ -973,40 +918,40 @@ class _ActPageState extends State<ActPage> {
     }
   }
 
-  Future<void> navigateSearch(
-      BuildContext context, SettingViewModel settingViewModel) async {
+  Future<void> navigateSearch(BuildContext context, SettingViewModel settingViewModel) async {
+
     final result = await Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => SearchAccountPage(
-          sector: sector,
-        ),
-      ),
+      MaterialPageRoute(builder: (context) => SearchAccountPage(sector: _sector)),
     );
 
     if (result != null) {
       SearchModel model = result;
-      var waterMeter =
-          Account(AccountId: model.accountId, UchrId: model.address);
-      await settingViewModel.getWaterMetersApartmentSector(waterMeter, _id);
-      addressVisible = true;
+      var waterMeter = Account(accountId: model.accountId, uchrId: model.address);
+
+      if (_sector == "1") {
+        await settingViewModel.getWaterMetersPrivateSector(waterMeter, _id);
+      } else {
+        await settingViewModel.getWaterMetersApartmentSector(waterMeter, _id);
+      }
+
+      _addressVisible = true;
       accountController.text = model.accountId;
       addressController.text = model.address;
 
       log("navigateSearch result: $result");
       log("navigateSearch model address: ${model.address}");
       log("navigateSearch model accountId: ${model.accountId}");
-      await updateCountersTable(sector, _id);
+      await updateCountersTable(_sector, _id);
     }
   }
 
-  Future<void> navigateEditWaterMeter(
-      BuildContext context, String actId) async {
+  Future<void> navigateEditWaterMeter(BuildContext context, String actId) async {
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => WaterMaterPage(
-          sector: sector,
+          sector: _sector,
           id: actId,
           actId: '',
         ),
@@ -1014,19 +959,18 @@ class _ActPageState extends State<ActPage> {
     );
 
     if (result != null) {
-      updateCountersTable(sector, _id);
+      updateCountersTable(_sector, _id);
       log("navigateEditWaterMeter result: $result");
-      log("navigateEditWaterMeter result sector: $sector");
+      log("navigateEditWaterMeter result sector: $_sector");
     }
   }
 
   Future<void> navigateWaterMeter(BuildContext context) async {
-    log("navigateWaterMeter sector: $sector");
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => WaterMaterPage(
-          sector: sector,
+          sector: _sector,
           id: '',
           actId: _id,
         ),
@@ -1034,74 +978,60 @@ class _ActPageState extends State<ActPage> {
     );
 
     if (result != null) {
-      await updateCountersTable(sector, _id);
+      await updateCountersTable(_sector, _id);
       log("navigateWaterMeter result: $result");
-      log("navigateWaterMeter result sector: $sector");
     }
   }
 
   Future<void> updateCountersTable(String sector, String actId) async {
     final db = await DbOpenHelper().database;
-    final sql = await db.rawQuery(
-        "select  co.id, co.act_id, co.CounterId, CASE WHEN co.ActionId='1' THEN 'Снятие' WHEN co.ActionId='10' THEN 'Установка' WHEN co.ActionId='9' THEN 'Показание' WHEN co.ActionId='8' THEN 'Поверка без демонтажа' ELSE '-' END Action_name, co.SerialNumber, cl.KpuIdName, t.TypeMeterName, co.Calibr, co.DateVerif, co.Readout, co.SealNumber, co.PhotoName, CASE WHEN co.StatusId='0' THEN 'Запрешен монтаж ПУ' WHEN co.StatusId='1' THEN 'Разрешен монтаж ПУ' ELSE '-' END Status_name from  Counters co left join Class cl on co.Kpuid=cl.KpuId left join Type t on t.TypeMeterId=co.TypeMeterId and t.Sector=\"$sector\" where act_id=\"$actId\";");
+    final sql = await db.rawQuery("select  co.id, co.act_id, co.CounterId, CASE WHEN co.ActionId='1' THEN 'Снятие' WHEN co.ActionId='10' THEN 'Установка' WHEN co.ActionId='9' THEN 'Показание' WHEN co.ActionId='8' THEN 'Поверка без демонтажа' ELSE '-' END Action_name, co.SerialNumber, cl.KpuIdName, t.TypeMeterName, co.Calibr, co.DateVerif, co.Readout, co.SealNumber, co.PhotoName, co.PhotoNameActOutputs, CASE WHEN co.StatusId='0' THEN 'Запрешен монтаж ПУ' WHEN co.StatusId='1' THEN 'Разрешен монтаж ПУ' ELSE '-' END Status_name from  Counters co left join Class cl on co.Kpuid=cl.KpuId left join Type t on t.TypeMeterId=co.TypeMeterId and t.Sector=\"$sector\" where act_id=\"$actId\";");
     log("counters sql $sql");
     itemWaterMeter.clear();
-
-    int? id;
-    int? idAct;
-    String? counterId;
-    String? kpuId;
-    String? calibr;
-    String? typeMeterName;
-    String? serialNumber;
-    String? date;
-    String? actionName;
-    String? sealNumber;
-    String? statusName;
-    String? readout;
-    String? photoName;
 
     for (var row in sql) {
       setState(() {});
       log("row:$row");
-      id = (row['id'] ?? '') as int?;
-      idAct = (row['act_id'] ?? '') as int?;
-      counterId = (row['CounterId'] ?? '') as String?;
-      kpuId = (row['KpuIdName'] ?? '') as String?;
-      calibr = (row['Calibr'] ?? '') as String?;
-      typeMeterName = (row['TypeMeterName'] ?? '') as String?;
-      serialNumber = (row['SerialNumber'] ?? '') as String?;
-      date = (row['DateVerif'] ?? '') as String?;
-      actionName = (row['Action_name'] ?? '') as String?;
-      sealNumber = (row['SealNumber'] ?? '') as String?;
-      statusName = (row['Status_name'] ?? '') as String?;
-      readout = (row['Readout'] ?? '') as String?;
-      photoName = (row['PhotoName'] ?? '') as String?;
+      int? id = (row['id'] ?? '') as int?;
+      int? idAct = (row['act_id'] ?? '') as int?;
+      String? counterId = (row['CounterId'] ?? '') as String?;
+      String? kpuId = (row['KpuIdName'] ?? '') as String?;
+      String? calibr = (row['Calibr'] ?? '') as String?;
+      String? typeMeterName = (row['TypeMeterName'] ?? '') as String?;
+      String? serialNumber = (row['SerialNumber'] ?? '') as String?;
+      String? date = (row['DateVerif'] ?? '') as String?;
+      String? actionName = (row['Action_name'] ?? '') as String?;
+      String? sealNumber = (row['SealNumber'] ?? '') as String?;
+      String? statusName = (row['Status_name'] ?? '') as String?;
+      String? readout = (row['Readout'] ?? '') as String?;
+      String? photoName = (row['PhotoName'] ?? '') as String?;
+      String? photoNameActOutputs = (row['PhotoNameActOutputs'] ?? '') as String?;
 
       log("id:$id");
 
       itemWaterMeter.add(WaterMeterModel(
           id: id.toString(),
-          ActId: idAct.toString(),
-          CounterId: counterId.toString(),
-          Kpuid: kpuId.toString(),
-          Calibr: calibr.toString(),
-          TypeMeterId: typeMeterName.toString(),
-          SerialNumber: serialNumber.toString(),
-          DateVerif: date.toString(),
-          ActionId: actionName.toString(),
-          SealNumber: sealNumber.toString(),
-          StatusId: statusName.toString(),
-          Readout: readout.toString(),
-          TypSituId: '',
-          PhotoName: photoName.toString(),
-          CdDate: photoName.toString(),
-          RpuId: '',
-          Diameter: ''));
+          actId: idAct.toString(),
+          counterId: counterId.toString(),
+          kpuid: kpuId.toString(),
+          calibr: calibr.toString(),
+          typeMeterId: typeMeterName.toString(),
+          serialNumber: serialNumber.toString(),
+          dateVerif: date.toString(),
+          actionId: actionName.toString(),
+          sealNumber: sealNumber.toString(),
+          statusId: statusName.toString(),
+          readout: readout.toString(),
+          typSituId: '',
+          photoName: photoName.toString(),
+          photoNameActOutputs: photoNameActOutputs.toString(),
+          cdDate: photoName.toString(),
+          rpuId: '',
+          diameter: ''));
     }
   }
 
-  Future<bool> checkAct(bool photo) async {
+  Future<bool> checkAct(bool photoCheck) async {
     bool result = true;
 
     String numberAct = numberActController.text.toString();
@@ -1122,15 +1052,7 @@ class _ActPageState extends State<ActPage> {
       return false;
     }
 
-    String altitude = altitudeController.text.toString();
-    String longitude = longitudeController.text.toString();
-    String latitude = latitudeController.text.toString();
-    if (latitude.isEmpty) {
-      dialogShow(context, "Поле Широта обязательно!");
-      return false;
-    }
-
-    if (photo) {
+    if (photoCheck) {
       String photo = photoController.text.toString();
       if (photo.isEmpty) {
         dialogShow(context, "Поле Фото(акт) обязательно!");
@@ -1141,11 +1063,11 @@ class _ActPageState extends State<ActPage> {
     return result;
   }
 
-  Future<bool> saveAct(BuildContext context) async {
+  Future<bool> saveAct() async {
     bool result = false;
-
-    if (await checkAct(false)) {
-      log("save true");
+    final resultCheck = await checkAct(false);
+    if (resultCheck) {
+      log("save act");
       final db = await DbOpenHelper().database;
       String sql;
 
@@ -1163,53 +1085,46 @@ class _ActPageState extends State<ActPage> {
       String longitude = longitudeController.text.toString();
       String latitude = latitudeController.text.toString();
 
-      sql =
-          "update Acts set NumAct=\"$numberAct\",PhoneM=\"$phoneM\",PhoneH=\"$phoneH\", DtDate=\"$date\", AccountId=\"$account\",Adress=\"$address\",UchrId=\"$uchId\",lat=\"$latitude\",lon=\"$longitude\",Alt=\"$altitude\", PhotoName=\"$photo\" where id=$_id;";
+      sql = "update Acts set NumAct=\"$numberAct\",PhoneM=\"$phoneM\",PhoneH=\"$phoneH\", DtDate=\"$date\", AccountId=\"$account\", Adress=\"$address\", UchrId=\"$uchId\", lat=\"$latitude\", lon=\"$longitude\", Alt=\"$altitude\", PhotoName=\"$photo\" where id=$_id;";
 
-      log("id save:$_id");
+      log("save id:$_id");
 
       await db.rawQuery(sql);
       result = true;
     }
-
     return result;
   }
 
   Future<bool> checkCounter() async {
     String sql;
     bool resultCheck = true;
-    bool snatie = false;
+    bool withdrawal = false;
 
     final db = await DbOpenHelper().database;
 
     sql = "select 1 from Counters where act_id=$_id";
     final result = await db.rawQuery(sql);
-    log("result Counters act_id $result");
     if (result.isEmpty) {
       dialogShow(context, "Нет ни одного водомера!");
       resultCheck = false;
     }
 
     sql = "select 1 from Counters where ActionId=1 and act_id=$_id";
-    final sql1 = await db.rawQuery(sql);
-    log("result Counters select $sql1");
-    if (sql1.isNotEmpty) {
-      snatie = true;
+    final res = await db.rawQuery(sql);
+    if (res.isNotEmpty) {
+      withdrawal = true;
     }
 
-    if (snatie) {
-      sql = "select 1 from Counters where ActionId=10 and act_id=" + _id;
+    if (withdrawal) {
+      sql = "select 1 from Counters where ActionId=10 and act_id=$_id";
       final result = await db.rawQuery(sql);
-      log("result Counters ActionId=10 $result");
       if (result.isEmpty) {
         dialogShow(context, "Нет действия установки прибор учета в акте!");
         resultCheck = false;
       }
     }
 
-    sql =
-        "select 1 from Counters where (ActionId is null or ActionId='' or Readout is null or Readout='' or PhotoName is null or PhotoName='') and act_id=" +
-            _id;
+    sql = "select 1 from Counters where (ActionId is null or ActionId='' or Readout is null or Readout='' or PhotoName is null or PhotoName='' or PhotoNameActOutputs='') and act_id=$_id";
     final result1 = await db.rawQuery(sql);
     log("result Counters not null: $result1");
     if (result1.isNotEmpty) {
@@ -1238,8 +1153,7 @@ class _ActPageState extends State<ActPage> {
       if (pickedFile != null) {
         setState(() {
           _image = File(pickedFile.path);
-          photoController.text = _image!.path;
-          // encodeImageToBase64(photoController.text);
+          photoController.text = _image?.path ?? "";
         });
       }
     } catch (e) {
@@ -1359,4 +1273,5 @@ class _ActPageState extends State<ActPage> {
       },
     );
   }
+
 }

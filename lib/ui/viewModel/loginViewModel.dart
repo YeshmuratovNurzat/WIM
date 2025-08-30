@@ -1,9 +1,9 @@
 import 'dart:developer';
-import 'package:WIM/domain/repo/LoginRepository.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:xml/xml.dart';
 import '../../data/model/login_model.dart';
 import '../../data/model/user_model.dart';
+import '../../domain/loginRepository.dart';
 
 class LoginViewModel with ChangeNotifier {
   final LoginRepository loginRepository;

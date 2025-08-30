@@ -1,7 +1,9 @@
 import 'dart:convert';
-import 'package:retrofit/retrofit.dart';
-import '../../data/model/user_model.dart';
-import '../../data/network/Api.dart';
+
+import 'package:retrofit/dio.dart';
+
+import '../data/model/user_model.dart';
+import '../data/network/api.dart';
 
 class LoginRepository {
   late final Api _apiService;

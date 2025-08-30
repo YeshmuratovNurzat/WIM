@@ -4,7 +4,8 @@ import 'package:WIM/data/model/water_meter_model.dart';
 import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import '../data/DbOpenHelper.dart';
+import 'package:intl/intl.dart';
+import '../../data/database/dbOpenHelper.dart';
 import 'package:open_file/open_file.dart';
 
 class WaterMeter extends StatelessWidget {
@@ -28,8 +29,7 @@ class WaterMaterPage extends StatefulWidget {
   final String id;
   final String actId;
 
-  WaterMaterPage(
-      {super.key, required this.sector, required this.id, required this.actId});
+  WaterMaterPage({super.key, required this.sector, required this.id, required this.actId});
 
   @override
   State<WaterMaterPage> createState() => _WaterMaterPageState();
@@ -51,6 +51,8 @@ class _WaterMaterPageState extends State<WaterMaterPage> {
   bool isVisiblePlaceInstallation = true;
   bool isVisibleDate = true;
   bool isVisibleFillingsNumber = true;
+  bool isVisiblePhotoActOutputs = false;
+  bool isVisiblePhotoActOutputsView = false;
 
   final ipuController = TextEditingController();
   final factoryNumberController = TextEditingController();
@@ -58,6 +60,7 @@ class _WaterMaterPageState extends State<WaterMaterPage> {
   final indicationController = TextEditingController();
   final dateController = TextEditingController();
   final photoController = TextEditingController();
+  final photoControllerActOutputs = TextEditingController();
 
   late List<Map<String, String>> itemPlaces = [];
   late List<Map<String, String>> itemType = [];
@@ -67,7 +70,7 @@ class _WaterMaterPageState extends State<WaterMaterPage> {
   late WaterMeterModel waterMeterModel;
 
   final List<Map<String, String>> itemActions = [
-    {'name': 'Снятие ПУ', 'value': '1'},
+    // {'name': 'Снятие ПУ', 'value': '1'},
     {'name': 'Показание ПУ', 'value': '9'},
     {'name': 'Установка ПУ', 'value': '10'},
   ];
@@ -194,31 +197,35 @@ class _WaterMaterPageState extends State<WaterMaterPage> {
         String? readout = (row['Readout'] ?? '') as String?;
         String? idTypSitu = (row['TypSituId'] ?? '') as String?;
         String? photoName = (row['PhotoName'] ?? '') as String?;
+        String? photoNameActOutputs =
+            (row['PhotoNameActOutputs'] ?? '') as String?;
         String? cdDate = (row['CdDate'] ?? '') as String?;
         String? rpuId = (row['RpuId'] ?? '') as String?;
         String? diameter = (row['Diameter'] ?? '') as String?;
 
         waterMeterModel = WaterMeterModel(
             id: id.toString(),
-            ActId: row['act_id'].toString(),
-            CounterId: idCounter.toString(),
-            Kpuid: idKpu.toString(),
-            Calibr: calibr.toString(),
-            TypeMeterId: idTypeMeter.toString(),
-            SerialNumber: serialNumber.toString(),
-            DateVerif: date.toString(),
-            ActionId: idAction.toString(),
-            SealNumber: sealNumber.toString(),
-            StatusId: statusId.toString(),
-            Readout: readout.toString(),
-            TypSituId: idTypSitu.toString(),
-            PhotoName: photoName.toString(),
-            CdDate: cdDate.toString(),
-            RpuId: rpuId.toString(),
-            Diameter: diameter.toString());
+            actId: row['act_id'].toString(),
+            counterId: idCounter.toString(),
+            kpuid: idKpu.toString(),
+            calibr: calibr.toString(),
+            typeMeterId: idTypeMeter.toString(),
+            serialNumber: serialNumber.toString(),
+            dateVerif: date.toString(),
+            actionId: idAction.toString(),
+            sealNumber: sealNumber.toString(),
+            statusId: statusId.toString(),
+            readout: readout.toString(),
+            typSituId: idTypSitu.toString(),
+            photoName: photoName.toString(),
+            photoNameActOutputs: photoNameActOutputs.toString(),
+            cdDate: cdDate.toString(),
+            rpuId: rpuId.toString(),
+            diameter: diameter.toString());
 
         waterMeterModel.toXml();
         isVisibleBtnDelete = true;
+        itemActions.add({'name': 'Снятие ПУ', 'value': '1'});
 
         await Future.delayed(Duration(milliseconds: 500));
 
@@ -226,31 +233,48 @@ class _WaterMaterPageState extends State<WaterMaterPage> {
           isLoading = false;
         });
 
-        String actionId = waterMeterModel.ActionId;
+        String actionId = waterMeterModel.actionId;
         if (actionId != "null" && actionId != "") {
-          valueListenableAction.value = waterMeterModel.ActionId;
-          if (valueListenableAction.value == "1" ||
-              valueListenableAction.value == "9") {
+          valueListenableAction.value = waterMeterModel.actionId;
+          if (valueListenableAction.value == "9") {
             isVisibleDate = false;
             isVisibleDiameter = false;
             isVisiblePlaceInstallation = false;
             isVisibleFillingsNumber = false;
+            isVisiblePhotoActOutputs = false;
           } else if (valueListenableAction.value == "8") {
             isVisibleDiameter = false;
             isVisiblePlaceInstallation = false;
             isVisibleDate = true;
+            isVisiblePhotoActOutputs = false;
+          } else if (valueListenableAction.value == "1") {
+            isVisibleDate = false;
+            isVisibleDiameter = false;
+            isVisiblePlaceInstallation = false;
+            isVisibleFillingsNumber = false;
+            isVisiblePhotoActOutputs = true;
           } else {
             isVisibleDate = true;
             isVisibleDiameter = true;
             isVisiblePlaceInstallation = true;
             isVisibleFillingsNumber = true;
+            isVisiblePhotoActOutputs = false;
           }
         }
 
-        String counterId = waterMeterModel.CounterId.toString();
+        String counterId = waterMeterModel.counterId.toString();
         if (counterId != "null" && counterId != "" && counterId != null) {
           ipuController.text = counterId;
           isVisibleIpuTextField = true;
+
+          // Найти индекс элемента с 'name' равным 'Установка ПУ'
+          int index = itemActions
+              .indexWhere((element) => element['name'] == 'Установка ПУ');
+
+          if (index != -1) {
+            itemActions[index]['name'] = 'Снятие ПУ';
+            itemActions[index]['value'] = '1';
+          }
 
           //Так как установить установленный нельзя скрываем Установка ПУ
           itemActions.removeLast();
@@ -260,38 +284,40 @@ class _WaterMaterPageState extends State<WaterMaterPage> {
           onlyRead = true;
         }
 
-        String kpuId = waterMeterModel.Kpuid;
+        String kpuId = waterMeterModel.kpuid;
         if (kpuId != "null" && kpuId != "") {
           valueListenableClassIpu.value = kpuId;
         }
 
-        String typeMeterId = waterMeterModel.TypeMeterId;
+        String typeMeterId = waterMeterModel.typeMeterId;
         if (typeMeterId != "" && kpuId != "null") {
           valueListenableTypeIpu.value = typeMeterId;
         }
 
-        String typSituId = waterMeterModel.TypSituId;
+        String typSituId = waterMeterModel.typSituId;
         if (typSituId != null && typSituId.isNotEmpty && typSituId != "null") {
           valueListenableTypicalSituation.value = typSituId;
         }
 
-        String dia = waterMeterModel.Diameter;
+        String dia = waterMeterModel.diameter;
         if (diameter != null && diameter.isNotEmpty && diameter != "null") {
           valueListenableDiameter.value = dia;
         }
 
-        String rpu = waterMeterModel.RpuId;
+        String rpu = waterMeterModel.rpuId;
         if (rpu != null && rpu.isNotEmpty && rpu != "null") {
           valueListenablePlaceInstallation.value = rpu;
         }
 
-        factoryNumberController.text = waterMeterModel.SerialNumber.toString();
-        indicationController.text = waterMeterModel.Readout.toString();
-        fillingsNumberController.text = waterMeterModel.SealNumber.toString();
-        photoController.text = waterMeterModel.PhotoName.toString();
-        dateController.text = waterMeterModel.DateVerif.toString();
+        factoryNumberController.text = waterMeterModel.serialNumber.toString();
+        indicationController.text = waterMeterModel.readout.toString();
+        fillingsNumberController.text = waterMeterModel.sealNumber.toString();
+        photoController.text = waterMeterModel.photoName.toString();
+        photoControllerActOutputs.text = waterMeterModel.photoNameActOutputs.toString();
+        dateController.text = waterMeterModel.dateVerif.toString();
 
         setState(() {});
+
       }
     } else {
       print('Нет данных для id = $actId');
@@ -300,6 +326,8 @@ class _WaterMaterPageState extends State<WaterMaterPage> {
   }
 
   Future<void> selectDate(BuildContext context) async {
+    String? formattedDate; // Для отображения выбранной даты
+
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: DateTime.now(),
@@ -310,9 +338,12 @@ class _WaterMaterPageState extends State<WaterMaterPage> {
     if (picked != null && picked != _selectedDate) {
       setState(() {
         _selectedDate = picked;
-        dateController.text = _selectedDate == null
-            ? 'Дата не выбрана!'
-            : '${_selectedDate?.day.toString()}.${_selectedDate?.month.toString()}.${_selectedDate?.year.toString()}';
+        formattedDate =
+            DateFormat('dd.MM.yyyy').format(picked); // Форматируем дату
+        dateController.text = formattedDate.toString();
+        // dateController.text = _selectedDate == null
+        //     ? 'Дата не выбрана!'
+        //     : '${_selectedDate?.day.toString()}.${_selectedDate?.month.toString()}.${_selectedDate?.year.toString()}';
       });
     }
   }
@@ -325,6 +356,9 @@ class _WaterMaterPageState extends State<WaterMaterPage> {
     typeIpu(widget.sector);
     situations(widget.sector);
     fetchCounters(widget.id);
+    if (widget.sector == "1") {
+      isVisiblePhotoActOutputsView = true;
+    }
   }
 
   @override
@@ -392,6 +426,9 @@ class _WaterMaterPageState extends State<WaterMaterPage> {
       buildFillingsNumber(),
       buildTypicalSituation(),
       buildPhoto(context),
+      Visibility(
+          visible: isVisiblePhotoActOutputsView,
+          child: buildPhotoActOutputs(context)),
       buildBtn(),
     ]);
   }
@@ -399,7 +436,7 @@ class _WaterMaterPageState extends State<WaterMaterPage> {
   Column buildBtn() {
     return Column(
       children: [
-        SizedBox(height: 10.0),
+        SizedBox(height: 5.0),
         Row(
           children: [
             Visibility(
@@ -408,7 +445,7 @@ class _WaterMaterPageState extends State<WaterMaterPage> {
               child: Expanded(
                 child: SizedBox(
                   width: double.infinity,
-                  height: 55,
+                  height: 50,
                   child: ElevatedButton(
                     onPressed: () {
                       btnDelete();
@@ -434,7 +471,7 @@ class _WaterMaterPageState extends State<WaterMaterPage> {
             Expanded(
               child: SizedBox(
                 width: double.infinity,
-                height: 55,
+                height: 50,
                 child: ElevatedButton(
                   onPressed: () {
                     btnSave();
@@ -464,9 +501,9 @@ class _WaterMaterPageState extends State<WaterMaterPage> {
   Column buildPhoto(BuildContext context) {
     return Column(
       children: [
-        SizedBox(height: 10.0),
+        SizedBox(height: 8.0),
         SizedBox(
-          height: 55,
+          height: 50,
           child: TextField(
               decoration: InputDecoration(
                 labelText: 'Фото',
@@ -501,7 +538,8 @@ class _WaterMaterPageState extends State<WaterMaterPage> {
                                         fontWeight: FontWeight.w400),
                                   ),
                                   onPressed: () {
-                                    pickImage(ImageSource.camera);
+                                    pickImage(
+                                        ImageSource.camera, photoController);
                                     Navigator.pop(context);
                                   },
                                 ),
@@ -516,7 +554,8 @@ class _WaterMaterPageState extends State<WaterMaterPage> {
                                         fontWeight: FontWeight.w400),
                                   ),
                                   onPressed: () {
-                                    pickImage(ImageSource.gallery);
+                                    pickImage(
+                                        ImageSource.gallery, photoController);
                                     Navigator.pop(context);
                                   },
                                 ),
@@ -531,7 +570,7 @@ class _WaterMaterPageState extends State<WaterMaterPage> {
                                         fontWeight: FontWeight.w400),
                                   ),
                                   onPressed: () {
-                                    openFile();
+                                    openFile(photoController);
                                   },
                                 ),
                               ],
@@ -574,10 +613,129 @@ class _WaterMaterPageState extends State<WaterMaterPage> {
     );
   }
 
+  Visibility buildPhotoActOutputs(BuildContext context) {
+    return Visibility(
+      visible: isVisiblePhotoActOutputs,
+      child: Column(
+        children: [
+          SizedBox(height: 8.0),
+          SizedBox(
+            height: 55,
+            child: TextField(
+                decoration: InputDecoration(
+                  labelText: 'Фото акт вывода',
+                  border: OutlineInputBorder(),
+                ),
+                controller: photoControllerActOutputs,
+                canRequestFocus: false,
+                showCursor: false,
+                keyboardType: TextInputType.text,
+                onTap: () {
+                  showModalBottomSheet(
+                      context: context,
+                      builder: (BuildContext context) {
+                        return Container(
+                          height: 200,
+                          width: double.infinity,
+                          padding: EdgeInsets.all(20.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Фото акт вывода',
+                                  style: TextStyle(fontSize: 18)),
+                              SizedBox(height: 10),
+                              Row(
+                                children: [
+                                  ElevatedButton(
+                                    style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.blueAccent),
+                                    child: Text(
+                                      'Фото',
+                                      style: TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w400),
+                                    ),
+                                    onPressed: () {
+                                      pickImage(ImageSource.camera,
+                                          photoControllerActOutputs);
+                                      Navigator.pop(context);
+                                    },
+                                  ),
+                                  SizedBox(width: 10),
+                                  ElevatedButton(
+                                    style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.blueAccent),
+                                    child: Text(
+                                      'Выбрать',
+                                      style: TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w400),
+                                    ),
+                                    onPressed: () {
+                                      pickImage(ImageSource.gallery,
+                                          photoControllerActOutputs);
+                                      Navigator.pop(context);
+                                    },
+                                  ),
+                                  SizedBox(width: 10),
+                                  ElevatedButton(
+                                    style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.blueAccent),
+                                    child: Text(
+                                      'Отобразить',
+                                      style: TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w400),
+                                    ),
+                                    onPressed: () {
+                                      openFile(photoControllerActOutputs);
+                                    },
+                                  ),
+                                ],
+                              ),
+                              SizedBox(
+                                height: 20,
+                              ),
+                              SizedBox(
+                                width: double.infinity,
+                                height: 50,
+                                child: ElevatedButton(
+                                  onPressed: () {
+                                    Navigator.pop(context);
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    foregroundColor: Colors.blue,
+                                    backgroundColor: Colors.white,
+                                    shadowColor: Colors.white,
+                                    elevation: 2,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                  child: Text(
+                                    'Отмена',
+                                    style: TextStyle(
+                                        fontSize: 16,
+                                        color: Colors.blue,
+                                        fontWeight: FontWeight.w400),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      });
+                }),
+          ),
+        ],
+      ),
+    );
+  }
+
   Column buildTypicalSituation() {
     return Column(
       children: [
-        SizedBox(height: 10.0),
+        SizedBox(height: 8.0),
         Form(
           key: _formKey5,
           child: DropdownButtonFormField2<String>(
@@ -630,12 +788,13 @@ class _WaterMaterPageState extends State<WaterMaterPage> {
       replacement: SizedBox(),
       child: Column(
         children: [
-          SizedBox(height: 10.0),
+          SizedBox(height: 8.0),
           SizedBox(
-            height: 50,
+            height: 45,
             child: TextField(
               readOnly: onlyRead,
               decoration: InputDecoration(
+                contentPadding: EdgeInsets.all(10),
                 labelText: 'Номер пломбы',
                 border: OutlineInputBorder(),
               ),
@@ -651,11 +810,12 @@ class _WaterMaterPageState extends State<WaterMaterPage> {
   Column buildIndication() {
     return Column(
       children: [
-        SizedBox(height: 10.0),
+        SizedBox(height: 8.0),
         SizedBox(
-          height: 50,
+          height: 45,
           child: TextField(
             decoration: InputDecoration(
+              contentPadding: EdgeInsets.all(10),
               labelText: 'Показание',
               border: OutlineInputBorder(),
             ),
@@ -673,14 +833,15 @@ class _WaterMaterPageState extends State<WaterMaterPage> {
       replacement: SizedBox(),
       child: Column(
         children: [
-          SizedBox(height: 10.0),
+          SizedBox(height: 8.0),
           Row(
             children: [
               Expanded(
                 child: SizedBox(
-                  height: 50,
+                  height: 45,
                   child: TextField(
                     decoration: InputDecoration(
+                      contentPadding: EdgeInsets.all(10),
                       labelText: 'Дата поверки',
                       border: OutlineInputBorder(),
                     ),
@@ -720,7 +881,7 @@ class _WaterMaterPageState extends State<WaterMaterPage> {
       replacement: SizedBox(),
       child: Column(
         children: [
-          SizedBox(height: 10.0),
+          SizedBox(height: 8.0),
           Form(
             key: _formKey4,
             child: DropdownButtonFormField2<String>(
@@ -774,7 +935,7 @@ class _WaterMaterPageState extends State<WaterMaterPage> {
       replacement: SizedBox(),
       child: Column(
         children: [
-          SizedBox(height: 10.0),
+          SizedBox(height: 8.0),
           Form(
             key: _formKey3,
             child: DropdownButtonFormField2<String>(
@@ -825,7 +986,7 @@ class _WaterMaterPageState extends State<WaterMaterPage> {
   Column buildTypeIpu() {
     return Column(
       children: [
-        SizedBox(height: 10.0),
+        SizedBox(height: 8.0),
         Form(
           key: _formKey2,
           child: DropdownButtonFormField2<String>(
@@ -877,7 +1038,7 @@ class _WaterMaterPageState extends State<WaterMaterPage> {
   Column buildClassIpu() {
     return Column(
       children: [
-        SizedBox(height: 10.0),
+        SizedBox(height: 8.0),
         Form(
           key: _formKey1,
           child: DropdownButtonFormField2<String>(
@@ -926,17 +1087,18 @@ class _WaterMaterPageState extends State<WaterMaterPage> {
   Column buildFactoryNumber() {
     return Column(
       children: [
-        SizedBox(height: 10.0),
+        SizedBox(height: 8.0),
         SizedBox(
-          height: 50,
+          height: 45,
           child: TextField(
             readOnly: onlyRead,
             decoration: InputDecoration(
+              contentPadding: EdgeInsets.all(10),
               labelText: 'Заводской номер',
               border: OutlineInputBorder(),
             ),
             controller: factoryNumberController,
-            keyboardType: TextInputType.text,
+            keyboardType: TextInputType.number,
           ),
         ),
       ],
@@ -970,20 +1132,29 @@ class _WaterMaterPageState extends State<WaterMaterPage> {
         onChanged: (value) {
           valueListenableAction.value = value;
           setState(() {
-            if (value == "1" || value == "9") {
+            if (value == "9") {
               isVisibleDate = false;
               isVisibleDiameter = false;
               isVisiblePlaceInstallation = false;
               isVisibleFillingsNumber = false;
+              isVisiblePhotoActOutputs = false;
             } else if (value == "8") {
               isVisibleDiameter = false;
               isVisiblePlaceInstallation = false;
               isVisibleDate = true;
+              isVisiblePhotoActOutputs = false;
+            } else if (value == "1") {
+              isVisibleDate = false;
+              isVisibleDiameter = false;
+              isVisiblePlaceInstallation = false;
+              isVisibleFillingsNumber = false;
+              isVisiblePhotoActOutputs = true;
             } else {
               isVisibleDate = true;
               isVisibleDiameter = true;
               isVisiblePlaceInstallation = true;
               isVisibleFillingsNumber = true;
+              isVisiblePhotoActOutputs = false;
             }
           });
         },
@@ -1025,7 +1196,7 @@ class _WaterMaterPageState extends State<WaterMaterPage> {
               keyboardType: TextInputType.text,
             ),
           ),
-          SizedBox(height: 10.0),
+          SizedBox(height: 8.0),
         ],
       ),
     );
@@ -1042,7 +1213,7 @@ class _WaterMaterPageState extends State<WaterMaterPage> {
     );
   }
 
-  void pickImage(ImageSource source) async {
+  void pickImage(ImageSource source, TextEditingController controller) async {
     try {
       final pickedFile = await _picker.pickImage(
         source: source,
@@ -1052,7 +1223,7 @@ class _WaterMaterPageState extends State<WaterMaterPage> {
       if (pickedFile != null) {
         setState(() {
           _image = File(pickedFile.path);
-          photoController.text = _image!.path;
+          controller.text = _image!.path;
         });
       }
     } catch (e) {
@@ -1060,9 +1231,9 @@ class _WaterMaterPageState extends State<WaterMaterPage> {
     }
   }
 
-  void openFile() async {
+  void openFile(TextEditingController controller) async {
     try {
-      String filePath = photoController.text;
+      String filePath = controller.text;
       if (filePath.isEmpty) {
         setState(() {
           log("Введите путь к файлу");
@@ -1102,6 +1273,7 @@ class _WaterMaterPageState extends State<WaterMaterPage> {
     String readout = indicationController.text.toString();
     String? typSituId = valueListenableTypicalSituation.value ?? '';
     String photoName = photoController.text.toString();
+    String photoNameActOutputs = photoControllerActOutputs.text.toString();
     int timestampInSeconds = DateTime.now().millisecondsSinceEpoch ~/ 1000;
     log("time $timestampInSeconds");
     String cdDate = timestampInSeconds.toString();
@@ -1111,8 +1283,7 @@ class _WaterMaterPageState extends State<WaterMaterPage> {
     if (widget.id == "") {
       String actId = widget.actId;
 
-      sql =
-          "insert into Counters(act_id,Kpuid,TypeMeterId,SerialNumber,ActionId,DateVerif,SealNumber,Readout,TypSituId,PhotoName,CdDate,Diameter,RpuId)" +
+      sql = "insert into Counters(act_id,Kpuid,TypeMeterId,SerialNumber,ActionId,DateVerif,SealNumber,Readout,TypSituId,PhotoName,CdDate,Diameter,RpuId)" +
               "values(" +
               actId +
               ",\"" +
@@ -1140,6 +1311,12 @@ class _WaterMaterPageState extends State<WaterMaterPage> {
               "\",\"" +
               rpuId +
               "\");";
+
+      if(widget.sector == "1" && actionId == "1"){
+        String sqlPhotoActOut = "insert into Counters(PhotoNameActOutputs) values($photoNameActOutputs)";
+        log("insert photo $sqlPhotoActOut");
+        await db.execute(sqlPhotoActOut);
+      }
 
       await db.execute(sql);
       log("insert Counters $sql");
@@ -1182,10 +1359,16 @@ class _WaterMaterPageState extends State<WaterMaterPage> {
           "\"," +
           " RpuId=\"" +
           rpuId +
-          "\"" +
-          " where id=" +
-          actId +
-          ";";
+          "\"";
+
+      if(widget.sector == "1" && actionId == "1"){
+        sql += ", PhotoNameActOutputs=\"" +
+            photoNameActOutputs +
+            "\"" + " where id=\"" + actId +"\";";
+        log("update photo $sql");
+      }else{
+        sql += " where id=\"" + actId +"\";";
+      }
 
       await db.execute(sql);
       log("update Counters $sql");
@@ -1203,8 +1386,7 @@ class _WaterMaterPageState extends State<WaterMaterPage> {
       log("delete sql $sql");
     } else {
       // Если ИПУ задан очищаем поля
-      sql =
-          "update Counters set ActionId=null, DateVerif=null, Readout=null, PhotoName=null where id=${widget.id}";
+      sql = "update Counters set ActionId=null, DateVerif=null, Readout=null, FPhotoName=null , PhotoNameActOutputs=null where id=${widget.id}";
       await db.execute(sql);
       log("delete update sql $sql");
     }

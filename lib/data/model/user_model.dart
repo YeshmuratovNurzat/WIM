@@ -1,12 +1,12 @@
 import 'package:xml/xml.dart';
 
 class User {
-  final String username;
+  final String login;
   final String password;
   final String pdaId;
 
   User({
-    required this.username,
+    required this.login,
     required this.password,
     required this.pdaId,
   });
@@ -16,7 +16,7 @@ class User {
     builder.processing('xml', 'version="1.0" encoding="UTF-8"');
     builder.element('root', nest: () {
       builder.element('User', nest: () {
-        builder.attribute('UserName', username);
+        builder.attribute('UserName', login);
         builder.attribute('Password', password);
         builder.attribute('PdaId', pdaId);
       });

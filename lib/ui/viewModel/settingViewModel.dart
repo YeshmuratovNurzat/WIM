@@ -1,13 +1,13 @@
 import 'dart:developer';
 import 'package:WIM/data/model/water_meter_model.dart';
-import 'package:WIM/domain/repo/SettingRepository.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:xml/xml.dart';
 
-import '../../data/DbOpenHelper.dart';
+import '../../data/database/dbOpenHelper.dart';
 import '../../data/model/result_model.dart';
 import '../../data/model/search_model.dart';
+import '../../domain/settingRepository.dart';
 
 class SettingViewModel with ChangeNotifier {
   late final SettingRepository settingRepository;
@@ -24,6 +24,11 @@ class SettingViewModel with ChangeNotifier {
 
   ResultModel? _resultModel;
   ResultModel? get resultModel => _resultModel;
+
+  void clearSearchModel() {
+    _search = [];
+    notifyListeners();
+  }
 
   Future<void> insertTypePrivateSector(XmlElement n) async {
     final db = await DbOpenHelper().database;
@@ -370,7 +375,7 @@ class SettingViewModel with ChangeNotifier {
     }
   }
 
-  Future<void> search(Search search, String stype) async {
+  Future<List<SearchModel>?> search(Search search, String stype) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
@@ -390,6 +395,8 @@ class SettingViewModel with ChangeNotifier {
           _search?.add(s);
         }
         log("Search: ${result.response.data}");
+        log("Search res: ${searchResult}");
+        return searchResult;
       }
     } catch (e) {
       _errorMessage = "$e";
@@ -398,6 +405,7 @@ class SettingViewModel with ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     }
+    return null;
   }
 
   Future<void> insertWaterMetersApartmentSector(
@@ -411,47 +419,52 @@ class SettingViewModel with ChangeNotifier {
     log("accountId: $accountId");
     log("actId: $actId");
 
-    XmlNode counter = n.childElements.first;
+    final data = n.findElements("Counter");
+    log("data: $data");
 
-    final String counterId =
-        counter.getAttribute('CounterId')?.replaceAll('"', "'") ?? '';
-    final String kpuId =
-        counter.getAttribute('Kpuid')?.replaceAll('"', "'") ?? '';
-    final String typeMeterId =
-        counter.getAttribute('TypeMeterId')?.replaceAll('"', "'") ?? '';
-    final String serialNumber =
-        counter.getAttribute('SerialNumber')?.replaceAll('"', "'") ?? '';
-    final String sealNumber =
-        counter.getAttribute('SealNumber')?.replaceAll('"', "'") ?? '';
-    final String statusId =
-        counter.getAttribute('StatusId')?.replaceAll('"', "'") ?? '';
-    final String calibr =
-        counter.getAttribute('Calibr')?.replaceAll('"', "'") ?? '';
+    for (var node in data) {
+      log("node: $node");
 
-    await db.insert(
-      'Counters',
-      {
-        'act_id': actId,
-        'CounterId': counterId,
-        'Calibr': calibr,
-        'Kpuid': kpuId,
-        'TypeMeterId': typeMeterId,
-        'SerialNumber': serialNumber,
-        'DateVerif': null,
-        'ActionId': null,
-        'SealNumber': sealNumber,
-        'StatusId': statusId,
-        'Readout': null,
-        'PhotoName': null,
-        'RpuId': '',
-        'Diameter': '',
-      },
-    );
+      String counterId =
+          node.getAttribute('CounterId')?.replaceAll('"', "'") ?? '';
+      String kpuId = node.getAttribute('Kpuid')?.replaceAll('"', "'") ?? '';
+      String typeMeterId =
+          node.getAttribute('TypeMeterId')?.replaceAll('"', "'") ?? '';
+      String serialNumber =
+          node.getAttribute('SerialNumber')?.replaceAll('"', "'") ?? '';
+      String sealNumber =
+          node.getAttribute('SealNumber')?.replaceAll('"', "'") ?? '';
+      String statusId =
+          node.getAttribute('StatusId')?.replaceAll('"', "'") ?? '';
+      String calibr = node.getAttribute('Calibr')?.replaceAll('"', "'") ?? '';
+
+      await db.insert(
+        'Counters',
+        {
+          'act_id': actId,
+          'CounterId': counterId,
+          'Calibr': calibr,
+          'Kpuid': kpuId,
+          'TypeMeterId': typeMeterId,
+          'SerialNumber': serialNumber,
+          'DateVerif': null,
+          'ActionId': null,
+          'SealNumber': sealNumber,
+          'StatusId': statusId,
+          'Readout': null,
+          'PhotoName': null,
+          'PhotoNameActOutputs': null,
+          'RpuId': '',
+          'Diameter': '',
+        },
+      );
+    }
 
     log("Data inserted successfully.");
   }
 
-  Future<void> getWaterMetersApartmentSector(Account account, String actId) async {
+  Future<void> getWaterMetersApartmentSector(
+      Account account, String actId) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
@@ -465,13 +478,45 @@ class SettingViewModel with ChangeNotifier {
         final document = XmlDocument.parse(xmlString);
         final elements = document.findAllElements('Account');
         log("Get Water Meters Apartment Sector: ${result.response.data}");
+        log("elements: ${elements}");
         for (var element in elements) {
+          log("element: ${element}");
           await insertWaterMetersApartmentSector(element, actId);
         }
       }
     } catch (e) {
       _errorMessage = "$e";
       log("Get Water Meters Apartment Sector Error: $e");
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> getWaterMetersPrivateSector(
+      Account account, String actId) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final result =
+          await settingRepository.getWaterMetersPrivateSector(account);
+
+      if (result.response.statusCode == 200) {
+        final xmlString = result.response.data;
+        final document = XmlDocument.parse(xmlString);
+        final elements = document.findAllElements('Account');
+        log("Get Water Meters Private Sector: ${result.response.data}");
+        log("elements: ${elements}");
+        for (var element in elements) {
+          log("element: ${element}");
+          await insertWaterMetersApartmentSector(element, actId);
+        }
+      }
+    } catch (e) {
+      _errorMessage = "$e";
+      log("Get Water Meters Private Sector Error: $e");
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -492,6 +537,7 @@ class SettingViewModel with ChangeNotifier {
         final element = document.findAllElements('ActList').first;
         _resultModel = ResultModel.fromXml(element);
         log("Send Act Result: ${result.response.data}");
+        log("Send Act element: ${element}");
         return _resultModel;
       }
     } catch (e) {

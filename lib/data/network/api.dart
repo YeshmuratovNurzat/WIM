@@ -2,7 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:retrofit/http.dart';
 import 'package:retrofit/retrofit.dart';
 
-part "Api.g.dart";
+part "api.g.dart";
 
 @RestApi(baseUrl: "http://as-portal.kz:442/default.aspx")
 abstract class Api {

@@ -1,5 +1,7 @@
+import 'dart:developer';
+
 import 'package:WIM/data/model/search_model.dart';
-import 'package:WIM/ui/viewModel/SettingViewModel.dart';
+import 'package:WIM/ui/viewModel/settingViewModel.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -34,7 +36,6 @@ class SearchAccountPage extends StatefulWidget {
 
 class _SearchAccountPageState extends State<SearchAccountPage> {
   List<SearchModel> searchResult = [];
-
   final account = TextEditingController();
   final street = TextEditingController();
   final houseNumber = TextEditingController();
@@ -43,15 +44,22 @@ class _SearchAccountPageState extends State<SearchAccountPage> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<SettingViewModel>(context, listen: false).clearSearchModel();
+    });
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final settingViewModel =
-        Provider.of<SettingViewModel>(context, listen: true);
+    final settingViewModel = Provider.of<SettingViewModel>(context, listen: true);
 
     return Scaffold(
-      appBar: buildAppBar(context, settingViewModel),
+      appBar: buildAppBar(context),
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
@@ -61,19 +69,14 @@ class _SearchAccountPageState extends State<SearchAccountPage> {
           ),
         ),
         child: Center(
-          child: settingViewModel.isLoading
-              ? CircularProgressIndicator()
-              : Consumer<SettingViewModel>(
-                  builder: (context, viewmodel, child) {
-                    return buildContent(viewmodel);
-                  },
-                ),
-        ),
+            child: settingViewModel.isLoading
+                ? CircularProgressIndicator()
+                : buildContent(settingViewModel)),
       ),
     );
   }
 
-  AppBar buildAppBar(BuildContext context, SettingViewModel settingViewModel) {
+  AppBar buildAppBar(BuildContext context) {
     return AppBar(
       iconTheme: IconThemeData(
         color: Colors.white,
@@ -84,30 +87,28 @@ class _SearchAccountPageState extends State<SearchAccountPage> {
   }
 
   Widget buildContent(SettingViewModel settingViewModel) {
+    searchResult = settingViewModel.searchModel!;
     return Column(
       children: [
         buildSearchFields(),
         buildSearchButton(context, settingViewModel),
         SizedBox(height: 10),
-        if (settingViewModel.searchModel != null) ...[
-          Expanded(
-            child: ListView.builder(
-              shrinkWrap: true,
-              scrollDirection: Axis.vertical,
-              itemCount: settingViewModel.searchModel!.length + 1,
-              itemBuilder: (context, index) {
-                if (index == 0) return buildHeaderRow();
-                SearchModel act = settingViewModel.searchModel![index - 1];
-                return GestureDetector(
-                  onTap: () {
-                    Navigator.pop(context, act);
-                  },
-                  child: buildDataRow(act),
-                );
+        ListView.builder(
+          shrinkWrap: true,
+          scrollDirection: Axis.vertical,
+          itemCount: searchResult.length + 1,
+          itemBuilder: (context, index) {
+            if (index == 0) return buildHeaderRow();
+            SearchModel act = searchResult[index - 1];
+            log("res act : $act");
+            return GestureDetector(
+              onTap: () {
+                Navigator.pop(context, act);
               },
-            ),
-          ),
-        ]
+              child: buildDataRow(act),
+            );
+          },
+        ),
       ],
     );
   }
@@ -160,49 +161,12 @@ class _SearchAccountPageState extends State<SearchAccountPage> {
     );
   }
 
-  void showSearchModal(
-      BuildContext context, SettingViewModel settingViewModel) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      builder: (BuildContext context) {
-        return GestureDetector(
-          onTap: () => FocusScope.of(context).unfocus(),
-          child: SingleChildScrollView(
-            child: Padding(
-              padding: EdgeInsets.only(
-                bottom: MediaQuery.of(context).viewInsets.bottom,
-                top: 20,
-                left: 20,
-                right: 20,
-              ),
-              child: SizedBox(
-                height: 420,
-                width: double.infinity,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Поиск', style: TextStyle(fontSize: 18)),
-                    SizedBox(height: 10),
-                    buildSearchFields(),
-                    SizedBox(height: 15),
-                    buildSearchButton(context, settingViewModel),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
   Widget buildSearchFields() {
     return Padding(
       padding: const EdgeInsets.all(10),
       child: Column(
         children: [
-          buildTextField('Лицевой счёт', account),
+          buildTextFieldAccount('Лицевой счёт', account),
           SizedBox(height: 10),
           buildTextField('Улица', street),
           SizedBox(height: 10),
@@ -210,6 +174,20 @@ class _SearchAccountPageState extends State<SearchAccountPage> {
           SizedBox(height: 10),
           buildTextField('Номер квартиры', apartmentNumber),
         ],
+      ),
+    );
+  }
+
+  Widget buildTextFieldAccount(String label, TextEditingController controller) {
+    return SizedBox(
+      height: 50,
+      child: TextField(
+        decoration: InputDecoration(
+          labelText: label,
+          border: OutlineInputBorder(),
+        ),
+        controller: controller,
+        keyboardType: TextInputType.number,
       ),
     );
   }
@@ -236,13 +214,7 @@ class _SearchAccountPageState extends State<SearchAccountPage> {
         height: 52,
         child: ElevatedButton(
           onPressed: () async {
-            var search = Search(
-                accountId: account.text,
-                street: street.text,
-                houseNumber: houseNumber.text,
-                apartmentNumber: apartmentNumber.text);
-
-            settingViewModel.search(search, widget.sector);
+            btnSearch(settingViewModel);
           },
           style: ElevatedButton.styleFrom(
               shape: RoundedRectangleBorder(
@@ -256,5 +228,37 @@ class _SearchAccountPageState extends State<SearchAccountPage> {
         ),
       ),
     );
+  }
+
+  btnSearch(SettingViewModel settingViewModel) async {
+    var search = Search(
+        accountId: account.text,
+        street: street.text,
+        houseNumber: houseNumber.text,
+        apartmentNumber: apartmentNumber.text);
+
+    settingViewModel.search(search, widget.sector);
+  }
+
+  list(List<SearchModel>? listItem) async {
+    Expanded(
+      child: ListView.builder(
+        shrinkWrap: true,
+        scrollDirection: Axis.vertical,
+        itemCount: listItem!.length + 1,
+        itemBuilder: (context, index) {
+          if (index == 0) return buildHeaderRow();
+          SearchModel act = listItem[index - 1];
+          log("res act : $act");
+          return GestureDetector(
+            onTap: () {
+              Navigator.pop(context, act);
+            },
+            child: buildDataRow(act),
+          );
+        },
+      ),
+    );
+    setState(() {});
   }
 }
