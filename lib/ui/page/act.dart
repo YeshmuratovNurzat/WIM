@@ -196,6 +196,37 @@ class _ActPageState extends State<ActPage> {
     );
   }
 
+  Widget buildListWaterMeter() {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: SizedBox(
+        width: 1300,
+        child: ListView.builder(
+          physics: NeverScrollableScrollPhysics(), // Отключает прокрутку
+          shrinkWrap: true,
+          scrollDirection: Axis.vertical,
+          itemCount: itemWaterMeter.length + 1,
+          itemBuilder: (context, index) {
+            if (index == 0) return buildHeaderRow();
+            WaterMeterModel act = itemWaterMeter[index - 1];
+            return InkWell(
+              onTap: () {
+                navigateEditWaterMeter(context, act.id);
+              },
+              child: buildDataRow(act),
+            );
+            // return GestureDetector(
+            //   onTap: () {
+            //     navigateEditWaterMeter(context, act.id);
+            //   },
+            //   child: buildDataRow(act),
+            // );
+          },
+        ),
+      ),
+    );
+  }
+
   Widget buildGeo() {
     return Row(
       children: [
@@ -263,40 +294,6 @@ class _ActPageState extends State<ActPage> {
           ),
         ),
       ],
-    );
-  }
-
-  Widget buildListWaterMeter() {
-    return SizedBox(
-      height: 300,
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: SizedBox(
-          width: 1300,
-          child: ListView.builder(
-            physics: NeverScrollableScrollPhysics(), // Отключает прокрутку
-            shrinkWrap: true,
-            scrollDirection: Axis.vertical,
-            itemCount: itemWaterMeter.length + 1,
-            itemBuilder: (context, index) {
-              if (index == 0) return buildHeaderRow();
-              WaterMeterModel act = itemWaterMeter[index - 1];
-              return InkWell(
-                onTap: () {
-                  navigateEditWaterMeter(context, act.id);
-                },
-                child: buildDataRow(act),
-              );
-              // return GestureDetector(
-              //   onTap: () {
-              //     navigateEditWaterMeter(context, act.id);
-              //   },
-              //   child: buildDataRow(act),
-              // );
-            },
-          ),
-        ),
-      ),
     );
   }
 
