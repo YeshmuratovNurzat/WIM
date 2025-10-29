@@ -159,10 +159,9 @@ class DbOpenHelper {
     );
   }
 
-  Future<List<Map<String, dynamic>>> getUsers() async {
+  Future<List<Map<String, dynamic>>> getAllUsers() async {
     final db = await database;
-    final result = await db.query('_users');
-    return result;
+    return await db.rawQuery("SELECT * FROM _users");
   }
 
   Future<void> deleteAllUsers() async {

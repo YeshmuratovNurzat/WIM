@@ -37,7 +37,7 @@ class LoginViewModel with ChangeNotifier {
         final userIdElement = document.findAllElements('UserId').first;
         loginModel = LoginModel.fromXml(userIdElement);
         log("Result: ${result.response.data}");
-        log("Login Model: $loginModel");
+        log("Login Model: ${loginModel.firmaName} ${loginModel.id}}");
         return loginModel;
       }
     } catch (e) {

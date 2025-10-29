@@ -71,25 +71,34 @@ class _ActsPageState extends State<ActsPage> {
     );
   }
 
-  Padding buildContainerBottom(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(4),
-      child: SizedBox(
-        width: double.infinity,
-        height: 55,
-        child: ElevatedButton(
-          onPressed: () {
-            navigateAct(context, widget.sector, '');
-          },
-          style: ElevatedButton.styleFrom(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              backgroundColor: Colors.blueAccent),
-          child: Text(
-            'Создать акт',
-            style: TextStyle(
-                fontSize: 17, fontWeight: FontWeight.w400, color: Colors.white),
+  Container buildContainerBottom(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Color(0x00fffc95), Colors.white],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.only(left: 10, right: 10, bottom: 60),
+        child: SizedBox(
+          width: double.infinity,
+          height: 55,
+          child: ElevatedButton(
+            onPressed: () {
+              navigateAct(context, widget.sector, '');
+            },
+            style: ElevatedButton.styleFrom(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                backgroundColor: Colors.blueAccent),
+            child: Text(
+              'Создать акт',
+              style: TextStyle(
+                  fontSize: 17, fontWeight: FontWeight.w400, color: Colors.white),
+            ),
           ),
         ),
       ),

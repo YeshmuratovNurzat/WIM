@@ -26,11 +26,14 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+
+  String firmaN = "";
+
   Future<void> checkType() async {
     final db = await DbOpenHelper().database;
 
     List<Map<String, dynamic>> result = await db.rawQuery("select 1 from Type");
-    log("result $result");
+    // log("result $result");
 
     if (result.isEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
@@ -52,6 +55,7 @@ class _HomePageState extends State<HomePage> {
     super.initState();
     checkType();
     requestPermissions();
+    firmaName();
   }
 
   @override
@@ -82,6 +86,8 @@ class _HomePageState extends State<HomePage> {
                 buildWidgetLegalSector(context),
                 SizedBox(height: 12),
                 buildBtnSettings(context),
+                SizedBox(height: 20),
+                Text(firmaN, style: TextStyle(fontSize: 15)),
               ],
             ),
           ),
@@ -102,6 +108,22 @@ class _HomePageState extends State<HomePage> {
       backgroundColor: Colors.blueAccent,
 
     );
+  }
+
+  Future<void> firmaName() async {
+    final DbOpenHelper dbHelper = DbOpenHelper();
+    final db = await dbHelper.database;
+
+    List<Map<String, dynamic>> users = await dbHelper.getAllUsers();
+    for (var user in users) {
+      print("HOME ID: ${user['id']}, Login: ${user['login']}, Firma: ${user['FirmaName']}");
+    }
+
+    final result = await db.rawQuery("select FirmaName from _users");
+    setState(() {
+      firmaN = result.first['FirmaName'] as String;
+      log("firmaN : $firmaN");
+    });
   }
 
   SizedBox buildBtnSettings(BuildContext context) {

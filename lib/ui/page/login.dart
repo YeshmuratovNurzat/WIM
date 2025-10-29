@@ -48,7 +48,7 @@ class _LoginPageState extends State<LoginPage> {
     getDeviceId();
     getVersion();
     getLogin();
-    firmaName();
+    // firmaName();
   }
 
   @override

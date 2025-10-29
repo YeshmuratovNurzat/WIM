@@ -407,7 +407,7 @@ class _WaterMaterPageState extends State<WaterMaterPage> {
 
   Padding buildPadding(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(10),
+      padding: const EdgeInsets.all(5),
       child: buildColumn(context),
     );
   }
@@ -430,13 +430,14 @@ class _WaterMaterPageState extends State<WaterMaterPage> {
           visible: isVisiblePhotoActOutputsView,
           child: buildPhotoActOutputs(context)),
       buildBtn(),
+      SizedBox(height: 5)
     ]);
   }
 
   Column buildBtn() {
     return Column(
       children: [
-        SizedBox(height: 5.0),
+        SizedBox(height: 2.0),
         Row(
           children: [
             Visibility(
@@ -445,7 +446,7 @@ class _WaterMaterPageState extends State<WaterMaterPage> {
               child: Expanded(
                 child: SizedBox(
                   width: double.infinity,
-                  height: 50,
+                  height: 45,
                   child: ElevatedButton(
                     onPressed: () {
                       btnDelete();
@@ -471,7 +472,7 @@ class _WaterMaterPageState extends State<WaterMaterPage> {
             Expanded(
               child: SizedBox(
                 width: double.infinity,
-                height: 50,
+                height: 45,
                 child: ElevatedButton(
                   onPressed: () {
                     btnSave();
@@ -501,7 +502,7 @@ class _WaterMaterPageState extends State<WaterMaterPage> {
   Column buildPhoto(BuildContext context) {
     return Column(
       children: [
-        SizedBox(height: 8.0),
+        SizedBox(height: 6.0),
         SizedBox(
           height: 50,
           child: TextField(
@@ -735,7 +736,7 @@ class _WaterMaterPageState extends State<WaterMaterPage> {
   Column buildTypicalSituation() {
     return Column(
       children: [
-        SizedBox(height: 8.0),
+        SizedBox(height: 6.0),
         Form(
           key: _formKey5,
           child: DropdownButtonFormField2<String>(
@@ -788,7 +789,7 @@ class _WaterMaterPageState extends State<WaterMaterPage> {
       replacement: SizedBox(),
       child: Column(
         children: [
-          SizedBox(height: 8.0),
+          SizedBox(height: 6.0),
           SizedBox(
             height: 45,
             child: TextField(
@@ -810,7 +811,7 @@ class _WaterMaterPageState extends State<WaterMaterPage> {
   Column buildIndication() {
     return Column(
       children: [
-        SizedBox(height: 8.0),
+        SizedBox(height: 6.0),
         SizedBox(
           height: 45,
           child: TextField(
@@ -833,7 +834,7 @@ class _WaterMaterPageState extends State<WaterMaterPage> {
       replacement: SizedBox(),
       child: Column(
         children: [
-          SizedBox(height: 8.0),
+          SizedBox(height: 6.0),
           Row(
             children: [
               Expanded(
@@ -881,7 +882,7 @@ class _WaterMaterPageState extends State<WaterMaterPage> {
       replacement: SizedBox(),
       child: Column(
         children: [
-          SizedBox(height: 8.0),
+          SizedBox(height: 6.0),
           Form(
             key: _formKey4,
             child: DropdownButtonFormField2<String>(
@@ -935,7 +936,7 @@ class _WaterMaterPageState extends State<WaterMaterPage> {
       replacement: SizedBox(),
       child: Column(
         children: [
-          SizedBox(height: 8.0),
+          SizedBox(height: 6.0),
           Form(
             key: _formKey3,
             child: DropdownButtonFormField2<String>(
@@ -986,7 +987,7 @@ class _WaterMaterPageState extends State<WaterMaterPage> {
   Column buildTypeIpu() {
     return Column(
       children: [
-        SizedBox(height: 8.0),
+        SizedBox(height: 6.0),
         Form(
           key: _formKey2,
           child: DropdownButtonFormField2<String>(
@@ -1038,7 +1039,7 @@ class _WaterMaterPageState extends State<WaterMaterPage> {
   Column buildClassIpu() {
     return Column(
       children: [
-        SizedBox(height: 8.0),
+        SizedBox(height: 6.0),
         Form(
           key: _formKey1,
           child: DropdownButtonFormField2<String>(
@@ -1087,7 +1088,7 @@ class _WaterMaterPageState extends State<WaterMaterPage> {
   Column buildFactoryNumber() {
     return Column(
       children: [
-        SizedBox(height: 8.0),
+        SizedBox(height: 6.0),
         SizedBox(
           height: 45,
           child: TextField(
@@ -1184,7 +1185,7 @@ class _WaterMaterPageState extends State<WaterMaterPage> {
       child: Column(
         children: [
           SizedBox(
-            height: 50,
+            height: 45,
             child: TextField(
               readOnly: true,
               focusNode: focusNode,
@@ -1196,7 +1197,7 @@ class _WaterMaterPageState extends State<WaterMaterPage> {
               keyboardType: TextInputType.text,
             ),
           ),
-          SizedBox(height: 8.0),
+          SizedBox(height: 6.0),
         ],
       ),
     );
