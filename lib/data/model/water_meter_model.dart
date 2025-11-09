@@ -44,6 +44,7 @@ class WaterMeterModel {
   final String dateVerif;
   final String actionId;
   final String sealNumber;
+  final String label;
   final String statusId;
   final String readout;
   final String typSituId;
@@ -64,6 +65,7 @@ class WaterMeterModel {
     required this.dateVerif,
     required this.actionId,
     required this.sealNumber,
+    required this.label,
     required this.statusId,
     required this.readout,
     required this.typSituId,
@@ -86,6 +88,7 @@ class WaterMeterModel {
       dateVerif: xml.getAttribute('DateVerif') ?? '',
       actionId: xml.getAttribute('ActionId') ?? '',
       sealNumber: xml.getAttribute('SealNumber') ?? '',
+      label: xml.getAttribute('Label') ?? '',
       statusId: xml.getAttribute('StatusId') ?? '',
       readout: xml.getAttribute('Readout') ?? '',
       typSituId: xml.getAttribute('TypSituId') ?? '',
@@ -110,6 +113,7 @@ class WaterMeterModel {
         builder.attribute('DateVerif', dateVerif);
         builder.attribute('ActionId', actionId);
         builder.attribute('SealNumber', sealNumber);
+        builder.attribute('Label', label);
         builder.attribute('Readout', readout);
         builder.attribute('CdDate', cdDate);
         builder.attribute('RpuId', rpuId);

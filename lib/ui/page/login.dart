@@ -4,6 +4,7 @@ import 'package:WIM/ui/util/global.dart';
 import 'package:WIM/ui/viewModel/loginViewModel.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -81,7 +82,8 @@ class _LoginPageState extends State<LoginPage> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(firmaN, style: TextStyle(fontSize: 15)),
+          infoText(),
+          // Text(firmaN, style: TextStyle(fontSize: 15)),
           SizedBox(height: 20),
           buildInput(),
           SizedBox(height: 25),
@@ -97,6 +99,30 @@ class _LoginPageState extends State<LoginPage> {
     return AppBar(
       title: Text('WIM Service', style: TextStyle(color: Colors.white)),
       backgroundColor: Colors.blueAccent,
+    );
+  }
+
+  Widget infoText(){
+    return SizedBox(
+      child: Column(
+        children: [
+          Image.asset('assets/images/log.png', width: 100, height: 100),
+          SizedBox(height: 20),
+          Text("WIM Service", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22), ),
+          Text.rich(
+            TextSpan(
+              children: [
+                TextSpan(text: 'Система управления и мониторинга\n'),
+                TextSpan(
+                  text: 'прибор учета',
+                  style: TextStyle(height: 1.5),
+                ),
+              ],
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
     );
   }
 
@@ -148,6 +174,10 @@ class _LoginPageState extends State<LoginPage> {
         ),
         Text(
           "v $version",
+          style: TextStyle(fontSize: 15),
+        ),
+        Text(
+          "09.11.2025",
           style: TextStyle(fontSize: 15),
         )
       ],

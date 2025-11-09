@@ -51,12 +51,14 @@ class _WaterMaterPageState extends State<WaterMaterPage> {
   bool isVisiblePlaceInstallation = true;
   bool isVisibleDate = true;
   bool isVisibleFillingsNumber = true;
+  bool isVisibleLabel = true;
   bool isVisiblePhotoActOutputs = false;
   bool isVisiblePhotoActOutputsView = false;
 
   final ipuController = TextEditingController();
   final factoryNumberController = TextEditingController();
   final fillingsNumberController = TextEditingController();
+  final labelController = TextEditingController();
   final indicationController = TextEditingController();
   final dateController = TextEditingController();
   final photoController = TextEditingController();
@@ -197,11 +199,11 @@ class _WaterMaterPageState extends State<WaterMaterPage> {
         String? readout = (row['Readout'] ?? '') as String?;
         String? idTypSitu = (row['TypSituId'] ?? '') as String?;
         String? photoName = (row['PhotoName'] ?? '') as String?;
-        String? photoNameActOutputs =
-            (row['PhotoNameActOutputs'] ?? '') as String?;
+        String? photoNameActOutputs = (row['PhotoNameActOutputs'] ?? '') as String?;
         String? cdDate = (row['CdDate'] ?? '') as String?;
         String? rpuId = (row['RpuId'] ?? '') as String?;
         String? diameter = (row['Diameter'] ?? '') as String?;
+        String? label = (row['Label'] ?? '') as String?;
 
         waterMeterModel = WaterMeterModel(
             id: id.toString(),
@@ -221,7 +223,8 @@ class _WaterMaterPageState extends State<WaterMaterPage> {
             photoNameActOutputs: photoNameActOutputs.toString(),
             cdDate: cdDate.toString(),
             rpuId: rpuId.toString(),
-            diameter: diameter.toString());
+            diameter: diameter.toString(),
+            label: label.toString());
 
         waterMeterModel.toXml();
         isVisibleBtnDelete = true;
@@ -312,6 +315,7 @@ class _WaterMaterPageState extends State<WaterMaterPage> {
         factoryNumberController.text = waterMeterModel.serialNumber.toString();
         indicationController.text = waterMeterModel.readout.toString();
         fillingsNumberController.text = waterMeterModel.sealNumber.toString();
+        labelController.text = waterMeterModel.label.toString();
         photoController.text = waterMeterModel.photoName.toString();
         photoControllerActOutputs.text = waterMeterModel.photoNameActOutputs.toString();
         dateController.text = waterMeterModel.dateVerif.toString();
@@ -423,7 +427,13 @@ class _WaterMaterPageState extends State<WaterMaterPage> {
       buildPlaceInstallation(),
       buildDateVerification(context),
       buildIndication(),
-      buildFillingsNumber(),
+      Row(
+          children: [
+            Expanded(child: buildFillingsNumber()),
+            SizedBox(width: 5),
+            Expanded(child: buildLabel()),
+          ]
+      ),
       buildTypicalSituation(),
       buildPhoto(context),
       Visibility(
@@ -801,6 +811,30 @@ class _WaterMaterPageState extends State<WaterMaterPage> {
               ),
               controller: fillingsNumberController,
               keyboardType: TextInputType.phone,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Visibility buildLabel() {
+    return Visibility(
+      visible: isVisibleLabel,
+      replacement: SizedBox(),
+      child: Column(
+        children: [
+          SizedBox(height: 6.0),
+          SizedBox(
+            height: 45,
+            child: TextField(
+              decoration: InputDecoration(
+                contentPadding: EdgeInsets.all(10),
+                labelText: 'Label',
+                border: OutlineInputBorder(),
+              ),
+              controller: labelController,
+              keyboardType: TextInputType.text,
             ),
           ),
         ],
@@ -1271,12 +1305,14 @@ class _WaterMaterPageState extends State<WaterMaterPage> {
     String? actionId = valueListenableAction.value ?? '';
     String date = dateController.text.toString();
     String sealNumber = fillingsNumberController.text.toString();
+    String label = labelController.text.toString();
     String readout = indicationController.text.toString();
     String? typSituId = valueListenableTypicalSituation.value ?? '';
     String photoName = photoController.text.toString();
     String photoNameActOutputs = photoControllerActOutputs.text.toString();
     int timestampInSeconds = DateTime.now().millisecondsSinceEpoch ~/ 1000;
     log("time $timestampInSeconds");
+    log("label $label");
     String cdDate = timestampInSeconds.toString();
     String? diameter = valueListenableDiameter.value ?? '';
     String? rpuId = valueListenablePlaceInstallation.value ?? '';
@@ -1284,7 +1320,7 @@ class _WaterMaterPageState extends State<WaterMaterPage> {
     if (widget.id == "") {
       String actId = widget.actId;
 
-      sql = "insert into Counters(act_id,Kpuid,TypeMeterId,SerialNumber,ActionId,DateVerif,SealNumber,Readout,TypSituId,PhotoName,CdDate,Diameter,RpuId)" +
+      sql = "insert into Counters(act_id,Kpuid,TypeMeterId,SerialNumber,ActionId,DateVerif,SealNumber,Readout,TypSituId,PhotoName,CdDate,Diameter,RpuId,Label)" +
               "values(" +
               actId +
               ",\"" +
@@ -1311,7 +1347,8 @@ class _WaterMaterPageState extends State<WaterMaterPage> {
               diameter +
               "\",\"" +
               rpuId +
-              "\");";
+              "\", \"" +
+              label +"\");";
 
       if(widget.sector == "1" && actionId == "1"){
         String sqlPhotoActOut = "insert into Counters(PhotoNameActOutputs) values($photoNameActOutputs)";
@@ -1360,7 +1397,9 @@ class _WaterMaterPageState extends State<WaterMaterPage> {
           "\"," +
           " RpuId=\"" +
           rpuId +
-          "\"";
+          "\"," +
+          " Label=\"" +
+          label + "\"";
 
       if(widget.sector == "1" && actionId == "1"){
         sql += ", PhotoNameActOutputs=\"" +

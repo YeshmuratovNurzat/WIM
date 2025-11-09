@@ -434,6 +434,8 @@ class SettingViewModel with ChangeNotifier {
           node.getAttribute('SerialNumber')?.replaceAll('"', "'") ?? '';
       String sealNumber =
           node.getAttribute('SealNumber')?.replaceAll('"', "'") ?? '';
+      String label =
+          node.getAttribute('Label')?.replaceAll('"', "'") ?? '';
       String statusId =
           node.getAttribute('StatusId')?.replaceAll('"', "'") ?? '';
       String calibr = node.getAttribute('Calibr')?.replaceAll('"', "'") ?? '';
@@ -456,6 +458,7 @@ class SettingViewModel with ChangeNotifier {
           'PhotoNameActOutputs': null,
           'RpuId': '',
           'Diameter': '',
+          'Label': label,
         },
       );
     }

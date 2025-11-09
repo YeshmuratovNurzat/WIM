@@ -1,4 +1,4 @@
-package com.example.WIM
+package com.example.wimService
 
 import android.os.Bundle
 import android.provider.Settings

@@ -91,7 +91,8 @@ class DbOpenHelper {
         PhotoNameActOutputs TEXT,
         CdDate TEXT,
         RpuId TEXT,
-        Diameter TEXT
+        Diameter TEXT,
+        Label TEXT
       )
     ''');
 
@@ -193,6 +194,8 @@ class DbOpenHelper {
         counter.getAttribute('SerialNumber')?.replaceAll('"', "'") ?? '';
     final String sealNumber =
         counter.getAttribute('SealNumber')?.replaceAll('"', "'") ?? '';
+    final String label =
+        counter.getAttribute('Label')?.replaceAll('"', "'") ?? '';
     final String statusId =
         counter.getAttribute('StatusId')?.replaceAll('"', "'") ?? '';
     final String calibr =
@@ -215,6 +218,7 @@ class DbOpenHelper {
         'PhotoName': null,
         'RpuId': '',
         'Diameter': '',
+        'Label': label,
       },
     );
   }

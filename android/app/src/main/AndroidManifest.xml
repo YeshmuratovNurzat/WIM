@@ -11,7 +11,7 @@
 
 
     <application
-        android:label="WIM"
+        android:label="WIM Service"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

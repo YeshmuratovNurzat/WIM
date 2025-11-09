@@ -829,7 +829,7 @@ class _ActPageState extends State<ActPage> {
 
         String xml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><root><ActList ActId=\"$actId\" NumAct=\"$numberAct\" Sector=\"$_sector\" DtDate=\"$date\" UserId=\"$userId\" AccountId=\"$accountId\" UchrId=\"\" PdaId=\"$androidId\" Lat=\"$lat\" Lon=\"$lon\" Alt=\"$altitude\" TelMob=\"$phoneM\" TelDom=\"$phoneH\"><ActFile>$file</ActFile>";
 
-        final sql = await db.rawQuery("select ifnull(CounterId,'') CounterId,ifnull(Kpuid,'') Kpuid,ifnull(TypeMeterId,'') TypeMeterId,ifnull(SerialNumber,'') SerialNumber,ifnull(DateVerif,'') DateVerif,ifnull(ActionId,'') ActionId,ifnull(SealNumber,'') SealNumber,ifnull(Readout,'') Readout,ifnull(TypSituId,'') TypSituId,PhotoName,PhotoNameActOutputs,CdDate,ifnull(RpuId,'') RpuId,ifnull(Diameter,'') Diameter from Counters where act_id=\"$_id\";");
+        final sql = await db.rawQuery("select ifnull(CounterId,'') CounterId,ifnull(Kpuid,'') Kpuid,ifnull(TypeMeterId,'') TypeMeterId,ifnull(SerialNumber,'') SerialNumber,ifnull(DateVerif,'') DateVerif,ifnull(ActionId,'') ActionId,ifnull(SealNumber,'') SealNumber,ifnull(Readout,'') Readout,ifnull(TypSituId,'') TypSituId,PhotoName,PhotoNameActOutputs,CdDate,ifnull(RpuId,'') RpuId,ifnull(Diameter,'') Diameter, Label from Counters where act_id=\"$_id\";");
         log("counter sql = $sql");
 
         for (var row in sql) {
@@ -850,6 +850,7 @@ class _ActPageState extends State<ActPage> {
           String? photoNameActOutputs = (row['PhotoNameActOutputs'] ?? '') as String?;
           String? cdDate = (row['CdDate'] ?? '') as String?;
           String? diameter = (row['Diameter'] ?? '') as String?;
+          String? label = (row['Label'] ?? '') as String?;
           String? rpuId = (row['RpuId'] ?? '') as String?;
 
           xml += "<Counter";
@@ -865,6 +866,7 @@ class _ActPageState extends State<ActPage> {
           xml += " CdDate=\"$cdDate\"";
           xml += " RpuId=\"$rpuId\"";
           xml += " Diameter=\"$diameter\"";
+          xml += " Label=\"$label\"";
           xml += ">";
 
           final photoIpu = await encodeImageToBase64(photoName.toString());
@@ -1002,6 +1004,7 @@ class _ActPageState extends State<ActPage> {
       String? date = (row['DateVerif'] ?? '') as String?;
       String? actionName = (row['Action_name'] ?? '') as String?;
       String? sealNumber = (row['SealNumber'] ?? '') as String?;
+      String? label = (row['Label'] ?? '') as String?;
       String? statusName = (row['Status_name'] ?? '') as String?;
       String? readout = (row['Readout'] ?? '') as String?;
       String? photoName = (row['PhotoName'] ?? '') as String?;
@@ -1027,7 +1030,8 @@ class _ActPageState extends State<ActPage> {
           photoNameActOutputs: photoNameActOutputs.toString(),
           cdDate: photoName.toString(),
           rpuId: '',
-          diameter: ''));
+          diameter: '',
+          label: label.toString()));
     }
   }
 
@@ -1085,9 +1089,11 @@ class _ActPageState extends State<ActPage> {
       String longitude = longitudeController.text.toString();
       String latitude = latitudeController.text.toString();
 
-      sql = "update Acts set NumAct=\"$numberAct\",PhoneM=\"$phoneM\",PhoneH=\"$phoneH\", DtDate=\"$date\", AccountId=\"$account\", Adress=\"$address\", UchrId=\"$uchId\", lat=\"$latitude\", lon=\"$longitude\", Alt=\"$altitude\", PhotoName=\"$photo\" where id=$_id;";
+      final safeAddress = address.replaceAll('"', '""');
+      sql = "update Acts set NumAct=\"$numberAct\",PhoneM=\"$phoneM\",PhoneH=\"$phoneH\", DtDate=\"$date\", AccountId=\"$account\", Adress=\"$safeAddress\", UchrId=\"$uchId\", lat=\"$latitude\", lon=\"$longitude\", Alt=\"$altitude\", PhotoName=\"$photo\" where id=$_id;";
 
       log("save id:$_id");
+      log("safeAddress:$safeAddress");
 
       await db.rawQuery(sql);
       result = true;
